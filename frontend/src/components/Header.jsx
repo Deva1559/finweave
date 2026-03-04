@@ -14,38 +14,15 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 lg:left-64 h-14 sm:h-16 bg-white shadow-sm z-30 flex items-center justify-between px-3 sm:px-4 lg:px-6">
-      {/* Left - Search - Hidden on very small screens */}
-      <div className="hidden sm:block flex-1 max-w-xs lg:max-w-md">
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-9 pr-4 py-1.5 sm:py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
-          />
-        </div>
-      </div>
-
-      {/* Mobile Search Icon */}
-      <div className="sm:hidden flex items-center gap-2">
-        <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-          <span className="text-lg">🔍</span>
-        </button>
+      {/* Left - Page Title or Welcome */}
+      <div className="flex items-center">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-800">
+          Welcome back, {user?.name || 'User'}
+        </h2>
       </div>
 
       {/* Right - Actions */}
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Quick Savings Button - Hidden on small mobile */}
-        <button className="hidden sm:flex items-center gap-1.5 lg:gap-2 bg-primary-50 text-primary-600 px-2.5 lg:px-4 py-1.5 lg:py-2 rounded-lg lg:rounded-xl hover:bg-primary-100 transition-colors text-sm">
-          <span className="text-sm">💰</span>
-          <span className="font-medium text-xs lg:text-sm">Quick Save</span>
-        </button>
-
-        {/* Mobile Quick Save Icon */}
-        <button className="sm:hidden p-2 bg-primary-50 text-primary-600 rounded-lg">
-          <span className="text-lg">💰</span>
-        </button>
-
         {/* Notifications - Hidden on very small screens */}
         <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors hidden xs:block">
           <span className="text-lg sm:text-xl">🔔</span>
