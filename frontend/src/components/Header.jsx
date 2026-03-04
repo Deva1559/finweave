@@ -1,9 +1,11 @@
 import { useApp } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Header() {
   const { user, logout } = useApp();
   const navigate = useNavigate();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -11,49 +13,68 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-64 right-0 h-16 bg-white shadow-sm z-40 flex items-center justify-between px-6">
-      {/* Left - Search */}
-      <div className="flex-1 max-w-md">
+    <header className="fixed top-0 left-0 right-0 lg:left-64 h-14 sm:h-16 bg-white shadow-sm z-30 flex items-center justify-between px-3 sm:px-4 lg:px-6">
+      {/* Left - Search - Hidden on very small screens */}
+      <div className="hidden sm:block flex-1 max-w-xs lg:max-w-md">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
           <input
             type="text"
             placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+            className="w-full pl-9 pr-4 py-1.5 sm:py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
           />
         </div>
       </div>
 
+      {/* Mobile Search Icon */}
+      <div className="sm:hidden flex items-center gap-2">
+        <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+          <span className="text-lg">🔍</span>
+        </button>
+      </div>
+
       {/* Right - Actions */}
-      <div className="flex items-center gap-4">
-        {/* Quick Savings Button */}
-        <button className="flex items-center gap-2 bg-primary-50 text-primary-600 px-4 py-2 rounded-xl hover:bg-primary-100 transition-colors">
-          <span>💰</span>
-          <span className="font-medium">Quick Save</span>
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Quick Savings Button - Hidden on small mobile */}
+        <button className="hidden sm:flex items-center gap-1.5 lg:gap-2 bg-primary-50 text-primary-600 px-2.5 lg:px-4 py-1.5 lg:py-2 rounded-lg lg:rounded-xl hover:bg-primary-100 transition-colors text-sm">
+          <span className="text-sm">💰</span>
+          <span className="font-medium text-xs lg:text-sm">Quick Save</span>
         </button>
 
-        {/* Notifications */}
-        <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-          <span className="text-xl">🔔</span>
+        {/* Mobile Quick Save Icon */}
+        <button className="sm:hidden p-2 bg-primary-50 text-primary-600 rounded-lg">
+          <span className="text-lg">💰</span>
+        </button>
+
+        {/* Notifications - Hidden on very small screens */}
+        <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors hidden xs:block">
+          <span className="text-lg sm:text-xl">🔔</span>
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
 
         {/* Profile Dropdown */}
         <div className="relative group">
-          <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-sm">
+          <button 
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-xs sm:text-sm">
               {user?.name?.charAt(0) || 'U'}
             </div>
-            <span className="font-medium text-gray-700">{user?.name || 'User'}</span>
-            <span className="text-gray-400">▼</span>
+            <span className="hidden sm:block font-medium text-gray-700 text-sm">{user?.name || 'User'}</span>
+            <span className="hidden sm:block text-gray-400 text-xs">▼</span>
           </button>
           
           {/* Dropdown Menu */}
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <div className="p-2">
+          <div className={`
+            absolute right-0 top-full mt-1 sm:mt-2 w-40 sm:w-48 bg-white rounded-xl shadow-lg border border-gray-100 
+            transition-all duration-200
+            ${isProfileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
+          `}>
+            <div className="p-1.5 sm:p-2">
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm flex items-center gap-2"
               >
                 🚪 Logout
               </button>

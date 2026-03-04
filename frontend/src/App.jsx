@@ -143,7 +143,7 @@ function App() {
           <Route path="/community" element={user ? <CommunityWithLayout /> : <Navigate to="/login" />} />
           <Route path="/ai-assistant" element={user ? <AIAssistantWithLayout /> : <Navigate to="/login" />} />
           <Route path="/education" element={user ? <EducationWithLayout /> : <Navigate to="/login" />} />
-<Route path="/goals" element={user ? <GoalsWithLayout /> : <Navigate to="/login" />} />
+          <Route path="/goals" element={user ? <GoalsWithLayout /> : <Navigate to="/login" />} />
           <Route path="/investment" element={user ? <InvestmentWithLayout /> : <Navigate to="/login" />} />
           
           {/* Default Redirect */}
@@ -154,14 +154,14 @@ function App() {
   );
 }
 
-// Layout Components
+// Layout Components - Responsive: ml-0 on mobile, ml-64 on lg+
 function DashboardWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Dashboard />
         </main>
       </div>
@@ -173,9 +173,9 @@ function SummaryWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Summary />
         </main>
       </div>
@@ -187,9 +187,9 @@ function FinancialTwinWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <FinancialTwin />
         </main>
       </div>
@@ -201,9 +201,9 @@ function MicroSavingsWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <MicroSavings />
         </main>
       </div>
@@ -215,9 +215,9 @@ function CommunityWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Community />
         </main>
       </div>
@@ -229,9 +229,9 @@ function AIAssistantWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <AIAssistant />
         </main>
       </div>
@@ -243,9 +243,9 @@ function EducationWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Education />
         </main>
       </div>
@@ -257,9 +257,9 @@ function GoalsWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Goals />
         </main>
       </div>
@@ -271,9 +271,9 @@ function InvestmentWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header />
-        <main className="pt-20 px-6">
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Investment />
         </main>
       </div>

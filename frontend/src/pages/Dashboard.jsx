@@ -80,7 +80,6 @@ export default function Dashboard() {
       });
       const data = await res.json();
       
-      // Fetch all transactions for calendar view
       const txsRes = await fetch(`${API_URL}/transactions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -166,8 +165,7 @@ export default function Dashboard() {
 
   // Chart configurations
   const savingsChartData = {
-    labels: dashboardData?.savingsProgress ? 
-      ['Current', 'Month 1', 'Month 2', 'Month 3', 'Month 6', 'Month 12'] : [],
+    labels: dashboardData?.savingsProgress ? ['Current', 'Month 1', 'Month 2', 'Month 3', 'Month 6', 'Month 12'] : [],
     datasets: [
       {
         label: 'Projected Savings',
@@ -187,12 +185,6 @@ export default function Dashboard() {
     ],
   };
 
-  // Debug: Show dashboard values
-  console.log('Dashboard income:', dashboardData?.incomeSummary?.total);
-  console.log('Dashboard expenses:', dashboardData?.spendingSummary?.total);
-  console.log('Dashboard savings:', dashboardData?.savingsProgress?.total);
-  console.log('Dashboard wallet:', dashboardData?.walletBalance);
-
   const spendingChartData = {
     labels: ['Needs', 'Wants', 'Savings'],
     datasets: [
@@ -205,48 +197,48 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-6 text-white">
-        <h2 className="text-2xl font-bold">Welcome back, {dashboardData?.user?.name || 'User'}! 👋</h2>
-        <p className="opacity-90 mt-1">Here's your financial overview</p>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      {/* Welcome Banner - Responsive */}
+      <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">Welcome back, {dashboardData?.user?.name || 'User'}! 👋</h2>
+        <p className="opacity-90 mt-1 text-sm sm:text-base">Here's your financial overview</p>
         <button 
           onClick={enableNotifications}
           disabled={notifLoading}
-          className="mt-4 bg-white text-primary-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="mt-3 sm:mt-4 bg-white text-primary-600 px-3 sm:px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 text-sm"
         >
           {notifLoading ? 'Enabling...' : '🔔 Enable Notifications'}
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {/* Income */}
-        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Income</p>
-              <p className="text-3xl font-bold text-trust-600">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm card-hover">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500">Total Income</p>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-trust-600 truncate">
                 ₹{dashboardData?.incomeSummary?.total?.toLocaleString() || 0}
               </p>
             </div>
-            <div className="w-16 h-16 rounded-full bg-trust-100 flex items-center justify-center">
-              <span className="text-2xl">💵</span>
+            <div className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-trust-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg sm:text-2xl">💵</span>
             </div>
           </div>
         </div>
 
         {/* Total Expenses */}
-        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Expenses</p>
-              <p className="text-3xl font-bold text-red-600">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm card-hover">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500">Total Expenses</p>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600 truncate">
                 ₹{dashboardData?.spendingSummary?.total?.toLocaleString() || 0}
               </p>
             </div>
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-              <span className="text-2xl">📉</span>
+            <div className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg sm:text-2xl">📉</span>
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-2">
@@ -254,40 +246,38 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Wallet Balance (Remaining Amount) */}
-        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Wallet Balance</p>
-              <p className={`text-3xl font-bold ${
+        {/* Wallet Balance */}
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm card-hover">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500">Wallet Balance</p>
+              <p className={`text-xl sm:text-2xl lg:text-3xl font-bold truncate ${
                 (dashboardData?.walletBalance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
                 ₹{Math.abs(dashboardData?.walletBalance || 0).toLocaleString()}
-                {(dashboardData?.walletBalance || 0) < 0 && ' (Overdrawn)'}
+              {(dashboardData?.walletBalance || 0) < 0 && ' (Overdrawn)'}
               </p>
             </div>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+            <div className={`w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full flex items-center justify-center flex-shrink-0 ${
               (dashboardData?.walletBalance || 0) >= 0 ? 'bg-green-100' : 'bg-red-100'
             }`}>
-              <span className="text-2xl">💳</span>
+              <span className="text-lg sm:text-2xl">💳</span>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Income - Expenses = Remaining
-          </p>
+          <p className="text-xs text-gray-500 mt-2">Income - Expenses</p>
         </div>
 
         {/* Savings */}
-        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Savings</p>
-              <p className="text-3xl font-bold text-primary-600">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm card-hover">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500">Total Savings</p>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-600 truncate">
                 ₹{dashboardData?.savingsProgress?.total?.toLocaleString() || 0}
               </p>
             </div>
-            <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
-              <span className="text-2xl">💰</span>
+            <div className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg sm:text-2xl">💰</span>
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-2">
@@ -296,18 +286,18 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Transaction & Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Quick Transaction & Charts - Responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Quick Transaction */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Quick Transaction</h3>
-          <form onSubmit={handleQuickTransaction} className="space-y-4">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Transaction</h3>
+          <form onSubmit={handleQuickTransaction} className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Type</label>
               <select
                 value={quickTransaction.type}
                 onChange={(e) => setQuickTransaction({ ...quickTransaction, type: e.target.value })}
-                className="input-field"
+                className="input-field text-sm"
               >
                 <option value="savings">💰 Savings</option>
                 <option value="income">📈 Income</option>
@@ -315,38 +305,38 @@ export default function Dashboard() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₹)</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Amount (₹)</label>
               <input
                 type="number"
                 value={quickTransaction.amount}
                 onChange={(e) => setQuickTransaction({ ...quickTransaction, amount: e.target.value })}
-                className="input-field"
+                className="input-field text-sm"
                 placeholder="Enter amount"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Description</label>
               <input
                 type="text"
                 value={quickTransaction.description}
                 onChange={(e) => setQuickTransaction({ ...quickTransaction, description: e.target.value })}
-                className="input-field"
+                className="input-field text-sm"
                 placeholder="What's this for?"
               />
             </div>
 
-            {/* Date Picker Dropdown */}
+            {/* Date Picker */}
             <div ref={calendarRef} className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">📅 Date</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">📅 Date</label>
               <button
                 type="button"
                 onClick={() => setCalendarOpen(!calendarOpen)}
-                className="input-field text-left flex items-center justify-between bg-white hover:border-primary-500 transition-colors cursor-pointer"
+                className="input-field text-left flex items-center justify-between bg-white hover:border-primary-500 transition-colors cursor-pointer text-sm"
               >
                 <span className={quickTransaction.date ? 'text-gray-800' : 'text-gray-400'}>
                   {quickTransaction.date
-                    ? new Date(quickTransaction.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+                    ? new Date(quickTransaction.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
                     : 'Select date'}
                 </span>
                 <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${calendarOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,9 +345,8 @@ export default function Dashboard() {
               </button>
 
               {calendarOpen && (
-                <div className="absolute z-50 top-full mt-2 left-0 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
-                  {/* Calendar Header */}
-                  <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-3 flex items-center justify-between text-white">
+                <div className="absolute z-50 top-full mt-2 left-0 w-full sm:w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+                  <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between text-white">
                     <button
                       type="button"
                       onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
@@ -365,7 +354,7 @@ export default function Dashboard() {
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <span className="font-bold text-sm">
+                    <span className="font-bold text-xs sm:text-sm">
                       {monthNames[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
                     </span>
                     <button
@@ -376,22 +365,17 @@ export default function Dashboard() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
                   </div>
-
-                  {/* Day Names */}
                   <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-100">
                     {dayNames.map(d => (
-                      <div key={d} className="py-2 text-center text-xs font-semibold text-gray-500">{d}</div>
+                      <div key={d} className="py-1.5 sm:py-2 text-center text-xs font-semibold text-gray-500">{d}</div>
                     ))}
                   </div>
-
-{/* Day Grid */}
-                  <div className="grid grid-cols-7 p-2 gap-1">
+                  <div className="grid grid-cols-7 p-1.5 sm:p-2 gap-1">
                     {calendarDays.map((date, i) => {
                       if (!date) return <div key={i} />;
                       const iso = formatDateISO(date);
                       const isSelected = iso === quickTransaction.date;
                       const isToday = iso === formatDateISO(new Date());
-                      // Allow only today and tomorrow (next day)
                       const tomorrow = new Date();
                       tomorrow.setDate(tomorrow.getDate() + 1);
                       const isTomorrow = iso === formatDateISO(tomorrow);
@@ -405,27 +389,19 @@ export default function Dashboard() {
                             setQuickTransaction({ ...quickTransaction, date: iso });
                             setCalendarOpen(false);
                           }}
-                          className={`w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-all duration-150
-                            ${
-                              isFutureBeyondTomorrow
-                                ? 'text-gray-300 cursor-not-allowed'
-                                : isSelected
-                                ? 'bg-primary-500 text-white shadow-md scale-110'
-                                : isToday
-                                ? 'bg-primary-100 text-primary-700 font-bold'
-                                : isTomorrow
-                                ? 'bg-yellow-100 text-yellow-700 font-bold'
-                                : 'text-gray-700 hover:bg-primary-50 hover:text-primary-600'
-                            }`}
+                          className={`w-7 h-7 sm:w-8 sm:h-8 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition-all duration-150
+                            ${isFutureBeyondTomorrow ? 'text-gray-300 cursor-not-allowed' :
+                              isSelected ? 'bg-primary-500 text-white shadow-md scale-110' :
+                              isToday ? 'bg-primary-100 text-primary-700 font-bold' :
+                              isTomorrow ? 'bg-yellow-100 text-yellow-700 font-bold' :
+                              'text-gray-700 hover:bg-primary-50 hover:text-primary-600'}`}
                         >
                           {date.getDate()}
                         </button>
                       );
                     })}
                   </div>
-
-                  {/* Today shortcut */}
-                  <div className="border-t border-gray-100 px-4 py-2 flex justify-center">
+                  <div className="border-t border-gray-100 px-3 py-2 flex justify-center">
                     <button
                       type="button"
                       onClick={() => {
@@ -442,112 +418,106 @@ export default function Dashboard() {
               )}
             </div>
 
-            <button type="submit" className="btn-primary w-full">
+            <button type="submit" className="btn-primary w-full text-sm">
               Add Transaction
             </button>
           </form>
         </div>
 
         {/* Savings Projection Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-sm lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Savings Projection</h3>
-          <Line 
-            data={savingsChartData} 
-            options={{
-              responsive: true,
-              plugins: {
-                legend: { display: false },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: (value) => '₹' + value.toLocaleString()
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm lg:col-span-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Savings Projection</h3>
+          <div className="h-48 sm:h-64 lg:h-80">
+            <Line 
+              data={savingsChartData} 
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: { callback: (value) => '₹' + value.toLocaleString() }
                   }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Budget Distribution & AI Suggestions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Budget Distribution & AI Suggestions - Responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Budget Distribution */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Budget Distribution</h3>
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Budget Distribution</h3>
           <div className="flex items-center justify-center">
-            <div className="w-48 h-48">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48">
               <Doughnut 
                 data={spendingChartData}
                 options={{
                   responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'bottom',
-                    }
-                  }
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }
                 }}
               />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-3 sm:mt-4 text-center">
             <div>
-              <p className="text-sm text-gray-500">Needs</p>
-              <p className="font-bold text-trust-600">50%</p>
+              <p className="text-xs sm:text-sm text-gray-500">Needs</p>
+              <p className="font-bold text-trust-600 text-sm sm:text-base">50%</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Wants</p>
-              <p className="font-bold text-yellow-600">30%</p>
+              <p className="text-xs sm:text-sm text-gray-500">Wants</p>
+              <p className="font-bold text-yellow-600 text-sm sm:text-base">30%</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Savings</p>
-              <p className="font-bold text-primary-600">20%</p>
+              <p className="text-xs sm:text-sm text-gray-500">Savings</p>
+              <p className="font-bold text-primary-600 text-sm sm:text-base">20%</p>
             </div>
           </div>
         </div>
 
         {/* AI Suggestions */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">💡 AI Financial Suggestions</h3>
-          <div className="space-y-3">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">💡 AI Financial Suggestions</h3>
+          <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-64 overflow-y-auto">
             {dashboardData?.aiSuggestions?.map((suggestion, index) => (
               <div 
                 key={index}
-                className={`p-4 rounded-xl ${
+                className={`p-3 sm:p-4 rounded-xl ${
                   suggestion.type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-400' :
                   suggestion.type === 'success' ? 'bg-green-50 border-l-4 border-green-400' :
                   suggestion.type === 'info' ? 'bg-trust-50 border-l-4 border-trust-400' :
                   'bg-gray-50 border-l-4 border-gray-400'
                 }`}
               >
-                <p className="font-semibold text-gray-800">{suggestion.title}</p>
-                <p className="text-sm text-gray-600 mt-1">{suggestion.message}</p>
+                <p className="font-semibold text-gray-800 text-sm">{suggestion.title}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">{suggestion.message}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Transactions */}
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
-        <div className="space-y-3">
+      {/* Recent Transactions - Responsive */}
+      <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Transactions</h3>
+        <div className="space-y-2 sm:space-y-3">
           {dashboardData?.transactions?.length > 0 ? (
-            dashboardData.transactions.map((tx, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <span className={`text-xl ${
-                    tx.type === 'savings' ? '🟢' : tx.type === 'income' ? '🔵' : '🔴'
-                  }`}>
+            dashboardData.transactions.slice(0, 5).map((tx, index) => (
+              <div key={index} className="flex items-center justify-between p-2.5 sm:p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <span className="text-lg sm:text-xl flex-shrink-0">
                     {tx.type === 'savings' ? '💰' : tx.type === 'income' ? '📈' : '📉'}
                   </span>
-                  <div>
-                    <p className="font-medium text-gray-800">{tx.description || tx.type}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-800 text-sm truncate">{tx.description || tx.type}</p>
                     <p className="text-xs text-gray-500">{new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
-                <p className={`font-semibold ${
+                <p className={`font-semibold flex-shrink-0 text-sm ${
                   tx.type === 'savings' || tx.type === 'income' ? 'text-primary-600' : 'text-red-600'
                 }`}>
                   {tx.type === 'expense' ? '-' : '+'}₹{tx.amount.toLocaleString()}
@@ -555,7 +525,7 @@ export default function Dashboard() {
               </div>
             ))
           ) : (
-            <p className="text-gray-500 text-center py-4">No transactions yet</p>
+            <p className="text-gray-500 text-center py-4 text-sm">No transactions yet</p>
           )}
         </div>
       </div>
@@ -565,3 +535,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
