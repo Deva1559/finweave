@@ -68,7 +68,7 @@ router.get('/gold-price', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/investments/buy - Buy gold
+// POST /api/investments/buy - Buy gold using wallet balance
 router.post('/buy', authMiddleware, async (req, res) => {
   try {
     const { amount } = req.body;
@@ -84,39 +84,65 @@ router.post('/buy', authMiddleware, async (req, res) => {
     // Calculate gold grams
     const goldGrams = amount / pricePerGram;
     
-    // Create Razorpay order
-    const options = {
-      amount: amount * 100, // Razorpay expects amount in paise
-      currency: 'INR',
-      receipt: `gold_buy_${Date.now()}`,
-      notes: {
-        userId: req.userId.toString(),
-        type: 'gold_buy',
-        goldGrams: goldGrams.toString()
-      }
-    };
+    // Get user and check wallet balance using mongoose
+    // Calculate wallet balance from transactions (in case stored balance is outdated)
+    const Transaction = mongoose.model('Transaction');
+    const userIdObj = new mongoose.Types.ObjectId(req.userId);
+    const user = await mongoose.model('User').findById(userIdObj);
     
-    const razorpayOrder = await razorpay.orders.create(options);
+    // Calculate actual wallet balance from transactions
+    const transactions = await Transaction.find({ userId: req.userId });
+    let calculatedBalance = 0;
+    transactions.forEach(t => {
+      if (t.type === 'income') calculatedBalance += t.amount;
+      else if (t.type === 'expense') calculatedBalance -= t.amount;
+      // savings don't affect wallet balance
+    });
     
-    // Store pending transaction
+    // Use calculated balance or stored balance (whichever is greater, in case stored was updated)
+    const walletBalance = Math.max(user.walletBalance || 0, calculatedBalance);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check wallet balance (use calculated balance)
+    if (walletBalance < amount) {
+      return res.status(400).json({ 
+        message: 'Insufficient wallet balance',
+        walletBalance: walletBalance,
+        required: amount
+      });
+    }
+    
+    // Deduct from wallet
+    user.walletBalance -= amount;
+    await user.save();
+    
+    // Create investment record (completed directly via wallet)
     const investment = new GoldInvestment({
       userId: req.userId,
       amount: amount,
       goldGrams: goldGrams,
       goldPrice: pricePerGram,
       type: 'buy',
-      paymentId: razorpayOrder.id,
-      transactionId: null
+      paymentId: `wallet_${Date.now()}`,
+      transactionId: `txn_${Date.now()}`
     });
     
     await investment.save();
     
     res.json({
-      orderId: razorpayOrder.id,
-      amount: amount,
-      goldGrams: goldGrams,
-      goldPrice: pricePerGram,
-      keyId: razorpay.key_id
+      success: true,
+      message: 'Gold purchased successfully using wallet',
+      investment: {
+        id: investment._id,
+        amount: amount,
+        goldGrams: goldGrams,
+        goldPrice: pricePerGram,
+        timestamp: investment.timestamp
+      },
+      walletBalance: user.walletBalance
     });
   } catch (err) {
     console.error('Error in buy gold:', err);
@@ -162,7 +188,7 @@ router.post('/verify-payment', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/investments/sell - Sell gold
+// POST /api/investments/sell - Sell gold and add amount to wallet
 router.post('/sell', authMiddleware, async (req, res) => {
   try {
     const { goldGrams } = req.body;
@@ -188,6 +214,18 @@ router.post('/sell', authMiddleware, async (req, res) => {
     // Calculate sell amount
     const sellAmount = goldGrams * pricePerGram;
     
+    // Get user to add sell amount to wallet using mongoose
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const user = await mongoose.model('User').findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Add sell amount to wallet
+    user.walletBalance += sellAmount;
+    await user.save();
+    
     // Create sell transaction
     const investment = new GoldInvestment({
       userId: req.userId,
@@ -202,14 +240,16 @@ router.post('/sell', authMiddleware, async (req, res) => {
     await investment.save();
     
     res.json({
-      message: 'Gold sold successfully',
+      success: true,
+      message: 'Gold sold successfully. Amount added to wallet.',
       investment: {
         id: investment._id,
         goldGrams: goldGrams,
         amount: sellAmount,
         goldPrice: pricePerGram,
         timestamp: investment.timestamp
-      }
+      },
+      walletBalance: user.walletBalance
     });
   } catch (err) {
     res.status(500).json({ message: 'Error selling gold', error: err.message });

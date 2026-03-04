@@ -34,7 +34,7 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onSuccess }) 
     setError('');
 
     try {
-      // Create order on backend
+      // Create order on backend (uses wallet now)
       const response = await fetch(`${API_URL}/investments/buy`, {
         method: 'POST',
         headers: {
@@ -50,58 +50,11 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onSuccess }) 
         throw new Error(data.message || 'Failed to create order');
       }
 
-      // Load Razorpay and complete payment
-      const razorpay = await loadRazorpay();
-      
-      if (!razorpay) {
-        // Fallback: Simulate successful payment for demo
-        console.log('Razorpay not available, simulating payment...');
-        await simulatePayment(data.orderId);
-        return;
-      }
-
-      const options = {
-        key: data.keyId,
-        amount: data.amount * 100,
-        currency: 'INR',
-        name: 'FinWeave Gold',
-        description: `Buy ${data.goldGrams.toFixed(4)}g of gold`,
-        order_id: data.orderId,
-        handler: async (response) => {
-          try {
-            // Verify payment
-            const verifyResponse = await fetch(`${API_URL}/investments/verify-payment`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature
-              })
-            });
-
-            if (verifyResponse.ok) {
-              onSuccess();
-              handleClose();
-            }
-          } catch (err) {
-            console.error('Payment verification failed:', err);
-            setError('Payment verification failed');
-          }
-        },
-        prefill: {
-          name: 'FinWeave User',
-        },
-        theme: {
-          color: '#F59E0B'
-        }
-      };
-
-      const rzp = new razorpay(options);
-      rzp.open();
+      // Success! Wallet was deducted and gold was purchased
+      // Since we're using wallet, no need for Razorpay
+      console.log('Purchase successful:', data);
+      onSuccess();
+      handleClose();
 
     } catch (err) {
       console.error('Buy gold error:', err);

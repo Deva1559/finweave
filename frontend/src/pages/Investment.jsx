@@ -65,7 +65,7 @@ export default function Investment() {
 
     } catch (err) {
       console.error('Error fetching investment data:', err);
-      setError('Failed to load investment data. Make sure backend is running on port 5002.');
+setError('Failed to load investment data. Make sure backend is running on port 3002.');
     } finally {
       setLoading(false);
     }
