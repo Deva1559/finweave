@@ -1,14 +1,38 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
+import { getOneSignalPlayerId, requestNotificationPermission } from '../onesignal';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useApp();
+  const { login, token, API_URL } = useApp();
   const navigate = useNavigate();
+
+  const setupNotifications = async (authToken) => {
+    try {
+      await requestNotificationPermission();
+      // Wait a moment for permission to be granted
+      setTimeout(async () => {
+        const playerId = await getOneSignalPlayerId();
+        if (playerId && authToken) {
+          await fetch(`${API_URL}/user/onesignal-id`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ playerId })
+          });
+          console.log('✅ OneSignal player ID saved:', playerId);
+        }
+      }, 1500);
+    } catch (err) {
+      console.error('Error setting up notifications:', err);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,6 +53,7 @@ export default function Login() {
       }
 
       login(data.user, data.token);
+      setupNotifications(data.token);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);

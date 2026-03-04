@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../App';
 import { Line, Doughnut } from 'react-chartjs-2';
+import Calendar from '../components/Calendar';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +14,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
+import { getOneSignalPlayerId, requestNotificationPermission } from '../onesignal';
 
 ChartJS.register(
   CategoryScale,
@@ -30,7 +32,42 @@ export default function Dashboard() {
   const { user, token, API_URL } = useApp();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [quickTransaction, setQuickTransaction] = useState({ type: 'savings', amount: '', description: '' });
+  const [notifLoading, setNotifLoading] = useState(false);
+  const today = new Date();
+  const formatDateISO = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const [quickTransaction, setQuickTransaction] = useState({ type: 'savings', amount: '', description: '', date: formatDateISO(new Date()) });
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const calendarRef = useRef(null);
+
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+    return days;
+  }, [calendarMonth]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+        setCalendarOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchDashboard();
@@ -42,7 +79,14 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setDashboardData(data);
+      
+      // Fetch all transactions for calendar view
+      const txsRes = await fetch(`${API_URL}/transactions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const allTransactions = await txsRes.json();
+      
+      setDashboardData({ ...data, transactions: allTransactions });
     } catch (err) {
       console.error('Error fetching dashboard:', err);
     } finally {
@@ -52,6 +96,7 @@ export default function Dashboard() {
 
   const handleQuickTransaction = async (e) => {
     e.preventDefault();
+    alert('Submitting transaction: ' + JSON.stringify(quickTransaction));
     try {
       const res = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
@@ -62,12 +107,52 @@ export default function Dashboard() {
         body: JSON.stringify(quickTransaction)
       });
       
+      console.log('Transaction created, fetching dashboard...');
       if (res.ok) {
-        setQuickTransaction({ type: 'savings', amount: '', description: '' });
-        fetchDashboard();
+        setQuickTransaction({ type: 'savings', amount: '', description: '', date: formatDateISO(new Date()) });
+        await fetchDashboard();
+        console.log('Dashboard refreshed');
+        alert('Transaction added successfully!');
+      } else {
+        alert('Error adding transaction: ' + res.status);
       }
     } catch (err) {
       console.error('Error creating transaction:', err);
+      alert('Error: ' + err.message);
+    }
+  };
+
+  const enableNotifications = async () => {
+    console.log('🔔 Button clicked, starting notification setup...');
+    setNotifLoading(true);
+    try {
+      console.log('📱 Requesting notification permission...');
+      await requestNotificationPermission();
+      console.log('⏳ Waiting for player ID...');
+      setTimeout(async () => {
+        console.log('🔍 Getting player ID now...');
+        const playerId = await getOneSignalPlayerId();
+        console.log('🎯 Got player ID:', playerId);
+        if (playerId) {
+          console.log('💾 Saving player ID to backend...');
+          await fetch(`${API_URL}/user/onesignal-id`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ playerId })
+          });
+          alert('Notifications enabled! Player ID: ' + playerId);
+        } else {
+          alert('Could not get player ID. Make sure to ALLOW the notification permission!');
+        }
+        setNotifLoading(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Error enabling notifications:', err);
+      setNotifLoading(false);
+      alert('Error enabling notifications: ' + err.message);
     }
   };
 
@@ -102,6 +187,12 @@ export default function Dashboard() {
     ],
   };
 
+  // Debug: Show dashboard values
+  console.log('Dashboard income:', dashboardData?.incomeSummary?.total);
+  console.log('Dashboard expenses:', dashboardData?.spendingSummary?.total);
+  console.log('Dashboard savings:', dashboardData?.savingsProgress?.total);
+  console.log('Dashboard wallet:', dashboardData?.walletBalance);
+
   const spendingChartData = {
     labels: ['Needs', 'Wants', 'Savings'],
     datasets: [
@@ -119,6 +210,13 @@ export default function Dashboard() {
       <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-6 text-white">
         <h2 className="text-2xl font-bold">Welcome back, {dashboardData?.user?.name || 'User'}! 👋</h2>
         <p className="opacity-90 mt-1">Here's your financial overview</p>
+        <button 
+          onClick={enableNotifications}
+          disabled={notifLoading}
+          className="mt-4 bg-white text-primary-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+        >
+          {notifLoading ? 'Enabling...' : '🔔 Enable Notifications'}
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -237,6 +335,113 @@ export default function Dashboard() {
                 placeholder="What's this for?"
               />
             </div>
+
+            {/* Date Picker Dropdown */}
+            <div ref={calendarRef} className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">📅 Date</label>
+              <button
+                type="button"
+                onClick={() => setCalendarOpen(!calendarOpen)}
+                className="input-field text-left flex items-center justify-between bg-white hover:border-primary-500 transition-colors cursor-pointer"
+              >
+                <span className={quickTransaction.date ? 'text-gray-800' : 'text-gray-400'}>
+                  {quickTransaction.date
+                    ? new Date(quickTransaction.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+                    : 'Select date'}
+                </span>
+                <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${calendarOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </button>
+
+              {calendarOpen && (
+                <div className="absolute z-50 top-full mt-2 left-0 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+                  {/* Calendar Header */}
+                  <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-3 flex items-center justify-between text-white">
+                    <button
+                      type="button"
+                      onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                      className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <span className="font-bold text-sm">
+                      {monthNames[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                      className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+
+                  {/* Day Names */}
+                  <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-100">
+                    {dayNames.map(d => (
+                      <div key={d} className="py-2 text-center text-xs font-semibold text-gray-500">{d}</div>
+                    ))}
+                  </div>
+
+{/* Day Grid */}
+                  <div className="grid grid-cols-7 p-2 gap-1">
+                    {calendarDays.map((date, i) => {
+                      if (!date) return <div key={i} />;
+                      const iso = formatDateISO(date);
+                      const isSelected = iso === quickTransaction.date;
+                      const isToday = iso === formatDateISO(new Date());
+                      // Allow only today and tomorrow (next day)
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      const isTomorrow = iso === formatDateISO(tomorrow);
+                      const isFutureBeyondTomorrow = date > tomorrow;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          disabled={isFutureBeyondTomorrow}
+                          onClick={() => {
+                            setQuickTransaction({ ...quickTransaction, date: iso });
+                            setCalendarOpen(false);
+                          }}
+                          className={`w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-all duration-150
+                            ${
+                              isFutureBeyondTomorrow
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : isSelected
+                                ? 'bg-primary-500 text-white shadow-md scale-110'
+                                : isToday
+                                ? 'bg-primary-100 text-primary-700 font-bold'
+                                : isTomorrow
+                                ? 'bg-yellow-100 text-yellow-700 font-bold'
+                                : 'text-gray-700 hover:bg-primary-50 hover:text-primary-600'
+                            }`}
+                        >
+                          {date.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Today shortcut */}
+                  <div className="border-t border-gray-100 px-4 py-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickTransaction({ ...quickTransaction, date: formatDateISO(new Date()) });
+                        setCalendarMonth(new Date());
+                        setCalendarOpen(false);
+                      }}
+                      className="text-xs text-primary-600 hover:text-primary-800 font-semibold hover:underline transition-colors"
+                    >
+                      📅 Jump to Today
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button type="submit" className="btn-primary w-full">
               Add Transaction
             </button>
@@ -339,7 +544,7 @@ export default function Dashboard() {
                   </span>
                   <div>
                     <p className="font-medium text-gray-800">{tx.description || tx.type}</p>
-                    <p className="text-xs text-gray-500">{new Date(tx.date).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
                 <p className={`font-semibold ${
@@ -354,6 +559,9 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Monthly Calendar View */}
+      <Calendar transactions={dashboardData?.transactions || []} />
     </div>
   );
 }

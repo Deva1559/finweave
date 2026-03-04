@@ -21,6 +21,9 @@ import Goals from './pages/Goals';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
+// OneSignal
+import { initializeOneSignal, getOneSignalPlayerId, requestNotificationPermission } from './onesignal';
+
 // API Helper
 const API_URL = '/api';
 
@@ -33,7 +36,44 @@ function App() {
 
   useEffect(() => {
     checkAuth();
+    // Initialize OneSignal
+    initializeOneSignal().then(() => {
+      console.log('OneSignal initialized');
+    }).catch(err => {
+      console.log('OneSignal not available:', err.message);
+    });
   }, []);
+
+  // Function to save OneSignal player ID to backend
+  const saveOneSignalPlayerId = async (playerId) => {
+    if (!playerId || !token) return;
+    try {
+      await fetch(`${API_URL}/user/onesignal-id`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ playerId })
+      });
+    } catch (err) {
+      console.error('Error saving OneSignal ID:', err);
+    }
+  };
+
+  // Request notification permission and get player ID
+  const setupNotifications = async () => {
+    try {
+      await requestNotificationPermission();
+      const playerId = await getOneSignalPlayerId();
+      if (playerId) {
+        await saveOneSignalPlayerId(playerId);
+        console.log('OneSignal player ID saved:', playerId);
+      }
+    } catch (err) {
+      console.error('Error setting up notifications:', err);
+    }
+  };
 
   const checkAuth = async () => {
     if (!token) {

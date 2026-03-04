@@ -5,9 +5,14 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const https = require('https');
+const fetch = require('node-fetch');
 
 // NTFY Configuration
 const NTFY_TOPIC = 'finweave-alerts';
+
+// OneSignal Configuration
+const ONE_SIGNAL_APP_ID = '55438fb8-c6cf-41fb-8b05-bde20d91628e';
+const ONE_SIGNAL_REST_API_KEY = 'os_v2_app_kvby7oggz5a7xcyfxxra3elcrz2jpc7xapoea6e6wo46wvs25gka5mcjayvdjkner3ffd7mapbou2awbg3x6lipfn42lmjtonrbbhqy';
 
 // Gemini API Configuration
 const GEMINI_API_KEY = 'AIzaSyD2R-EAUFN4jpUCDGWuQpYPP9v8JGxIWHQ';
@@ -38,6 +43,7 @@ const userSchema = new mongoose.Schema({
   financialGoals: [String],
   trustScore: { type: Number, default: 50 },
   savingsGroups: [{ type: String }],
+  oneSignalPlayerId: { type: String, default: null },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -178,6 +184,22 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: 'Error updating profile' });
+  }
+});
+
+// Save OneSignal Player ID endpoint
+app.post('/api/user/onesignal-id', authMiddleware, async (req, res) => {
+  try {
+    const { playerId } = req.body;
+    if (!playerId) {
+      return res.status(400).json({ message: 'Player ID is required' });
+    }
+    
+    await User.findByIdAndUpdate(req.userId, { oneSignalPlayerId: playerId });
+    console.log('✅ OneSignal Player ID saved for user:', req.userId);
+    res.json({ message: 'OneSignal ID saved successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving OneSignal ID' });
   }
 });
 
@@ -375,6 +397,13 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
     await User.findByIdAndUpdate(req.userId, updateObj);
     
     const updatedUser = await User.findById(req.userId);
+    
+    // Check spending comparison and send notification if needed (only for expenses)
+    if (type === 'expense') {
+      setTimeout(() => {
+        checkAndSendSpendingNotification(req.userId, transactionDate);
+      }, 1000); // Small delay to ensure transaction is saved
+    }
     
     res.status(201).json({
       ...transaction.toObject(),
@@ -692,6 +721,100 @@ function sendNTFYNotification(userId, title, message) {
   
   req.write(postData);
   req.end();
+}
+
+// OneSignal Push Notification Function
+async function sendOneSignalNotification(playerId, title, message) {
+  if (!playerId) {
+    console.log('📱 OneSignal: No player ID provided');
+    return;
+  }
+  
+  const postData = JSON.stringify({
+    app_id: ONE_SIGNAL_APP_ID,
+    include_player_ids: [playerId],
+    headings: { en: title },
+    contents: { en: message },
+    url: 'finweave://dashboard'
+  });
+  
+  const options = {
+    hostname: 'onesignal.com',
+    port: 443,
+    path: '/api/v1/notifications',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${ONE_SIGNAL_REST_API_KEY}`,
+      'Content-Length': postData.length
+    }
+  };
+  
+  const req = https.request(options, (res) => {
+    let data = '';
+    res.on('data', (chunk) => {
+      data += chunk;
+    });
+    res.on('end', () => {
+      console.log('📱 OneSignal Notification sent - Title:', title);
+    });
+  });
+  
+  req.on('error', (e) => {
+    console.log('📱 OneSignal Error:', e.message);
+  });
+  
+  req.write(postData);
+  req.end();
+}
+
+// Check spending comparison and send notification if 2nd day > 1st day
+async function checkAndSendSpendingNotification(userId, transactionDate) {
+  try {
+    const user = await User.findById(userId);
+    if (!user || !user.oneSignalPlayerId) {
+      console.log('📱 No OneSignal player ID for user:', userId);
+      return;
+    }
+    
+    // Get all expenses for the user
+    const transactions = await Transaction.find({ 
+      userId: userId, 
+      type: 'expense' 
+    }).sort({ date: -1 });
+    
+    // Calculate spending for each day (last 2 days)
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    // Get today's total spending
+    const todaySpending = transactions
+      .filter(t => t.date === todayStr)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    // Get yesterday's total spending
+    const yesterdaySpending = transactions
+      .filter(t => t.date === yesterdayStr)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    console.log(`📊 Spending comparison - Today (${todayStr}): ₹${todaySpending}, Yesterday (${yesterdayStr}): ₹${yesterdaySpending}`);
+    
+    // If today > yesterday, send notification
+    if (todaySpending > yesterdaySpending && yesterdaySpending > 0) {
+      const difference = todaySpending - yesterdaySpending;
+      const title = '⚠️ Spending Alert!';
+      const message = `You have spent more today (₹${todaySpending}) than yesterday (₹${yesterdaySpending}). That's ₹${difference} more!`;
+      
+      await sendOneSignalNotification(user.oneSignalPlayerId, title, message);
+      console.log('📱 High spending notification sent!');
+    }
+  } catch (err) {
+    console.log('📱 Error checking spending notification:', err.message);
+  }
 }
 
 // Create demo user if not exists

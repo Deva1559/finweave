@@ -34,7 +34,8 @@ export default function Summary() {
   // Filter transactions based on selected month, year, and category
   const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
-      const txDate = new Date(tx.date);
+      // Parse date as local time to avoid timezone issues
+      const txDate = new Date(tx.date + 'T00:00:00');
       const monthMatch = txDate.getMonth() === selectedMonth;
       const yearMatch = txDate.getFullYear() === selectedYear;
       const categoryMatch = selectedCategory === 'all' || tx.type === selectedCategory;
@@ -220,7 +221,7 @@ export default function Summary() {
                   <div>
                     <p className="font-medium text-gray-800">{tx.description || tx.type}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(tx.date).toLocaleDateString('en-IN', { 
+                      {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { 
                         weekday: 'short',
                         year: 'numeric', 
                         month: 'short', 

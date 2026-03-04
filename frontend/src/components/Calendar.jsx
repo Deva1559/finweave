@@ -24,8 +24,7 @@ export default function Calendar({ transactions = [], onDateSelect }) {
   const transactionsByDate = useMemo(() => {
     const grouped = {}
     transactions.forEach(tx => {
-      const date = new Date(tx.date)
-      const key = date.toISOString().split("T")[0]
+      const key = tx.date
       if (!grouped[key]) { grouped[key] = [] }
       grouped[key].push(tx)
     })
@@ -35,9 +34,11 @@ export default function Calendar({ transactions = [], onDateSelect }) {
   const monthlySummary = useMemo(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
+    const monthStr = String(month + 1).padStart(2, '0')
+    const monthPrefix = `${year}-${monthStr}`
+    
     const monthTransactions = transactions.filter(tx => {
-      const txDate = new Date(tx.date)
-      return txDate.getFullYear() === year && txDate.getMonth() === month
+      return tx.date && tx.date.startsWith(monthPrefix)
     })
     const income = monthTransactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0)
     const expense = monthTransactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0)
@@ -47,7 +48,8 @@ export default function Calendar({ transactions = [], onDateSelect }) {
 
   const getTransactionsForDate = (date) => {
     if (!date) return []
-    const key = date.toISOString().split("T")[0]
+    // Use local date formatting to avoid UTC conversion issues
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     return transactionsByDate[key] || []
   }
 
@@ -108,6 +110,7 @@ export default function Calendar({ transactions = [], onDateSelect }) {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
+      </div>
 
       <div className="grid grid-cols-7 bg-gray-50 border-b">
         {dayNames.map((day) => (<div key={day} className="py-3 text-center text-sm font-semibold text-gray-600">{day}</div>))}
@@ -143,6 +146,7 @@ export default function Calendar({ transactions = [], onDateSelect }) {
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{tx.type === "income" ? "I" : tx.type === "expense" ? "E" : "S"}</span>
                     <div><p className="text-sm font-medium text-gray-800">{tx.description || tx.type}</p><p className="text-xs text-gray-500 capitalize">{tx.type}</p></div>
+                  </div>
                   <span className={`font-semibold ${tx.type === "expense" ? "text-red-600" : "text-green-600"}`}>{tx.type === "expense" ? "-" : "+"}Rs{tx.amount.toLocaleString()}</span>
                 </div>
               ))}
@@ -158,12 +162,15 @@ export default function Calendar({ transactions = [], onDateSelect }) {
           <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-red-500"><p className="text-xs text-gray-500">Total Expenses</p><p className="text-lg font-bold text-red-600">-Rs{monthlySummary.expense.toLocaleString()}</p></div>
           <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500"><p className="text-xs text-gray-500">Total Savings</p><p className="text-lg font-bold text-blue-600">Rs{monthlySummary.savings.toLocaleString()}</p></div>
           <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-purple-500"><p className="text-xs text-gray-500">Net Balance</p><p className={`text-lg font-bold ${monthlySummary.total >= 0 ? "text-green-600" : "text-red-600"}`}>{monthlySummary.total >= 0 ? "+" : ""}Rs{monthlySummary.total.toLocaleString()}</p></div>
+        </div>
       </div>
 
       <div className="p-3 bg-gray-50 border-t flex items-center justify-center gap-6 text-xs">
         <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-green-500"></span><span className="text-gray-600">Income</span></div>
         <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-red-500"></span><span className="text-gray-600">Expense</span></div>
         <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-500"></span><span className="text-gray-600">Savings</span></div>
+      </div>
     </div>
   )
 }
+
