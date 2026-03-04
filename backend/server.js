@@ -4,6 +4,10 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const https = require('https');
+
+// NTFY Configuration
+const NTFY_TOPIC = 'finweave-alerts';
 
 // Gemini API Configuration
 const GEMINI_API_KEY = 'AIzaSyD2R-EAUFN4jpUCDGWuQpYPP9v8JGxIWHQ';
@@ -11,7 +15,7 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 const JWT_SECRET = 'finweave_secret_key_2024';
 
 // Middleware
@@ -30,20 +34,20 @@ const userSchema = new mongoose.Schema({
   incomeType: { type: String, default: 'daily' },
   income: { type: Number, default: 0 },
   dailySavings: { type: Number, default: 0 },
-  walletBalance: { type: Number, default: 0 }, // Wallet balance field
+  walletBalance: { type: Number, default: 0 },
   financialGoals: [String],
   trustScore: { type: Number, default: 50 },
   savingsGroups: [{ type: String }],
   createdAt: { type: Date, default: Date.now }
 });
 
-// Transaction Schema
+// Transaction Schema - Store date as string to avoid timezone issues
 const transactionSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
   type: { type: String, enum: ['income', 'expense', 'savings'] },
   amount: Number,
   description: String,
-  date: { type: Date, default: Date.now }
+  date: { type: String, default: () => new Date().toISOString().split('T')[0] }
 });
 
 // Goal Schema
@@ -190,7 +194,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
     if (transactions.length > 0) healthScore += 15;
     if (user.trustScore > 70) healthScore += 15;
     
-    // Calculate summaries
+    // Calculate summaries - using string date comparison
     const incomeTotal = transactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -201,6 +205,52 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
       .filter(t => t.type === 'savings')
       .reduce((sum, t) => sum + t.amount, 0);
     
+    // Calculate wallet balance: Income - Expenses (savings is separate)
+    const calculatedWalletBalance = incomeTotal - expenseTotal;
+    
+    // Calculate today's spending using string date comparison
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaySpending = transactions
+      .filter(t => t.type === 'expense' && t.date === todayStr)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    // Calculate average daily spending (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    const recentExpenses = transactions
+      .filter(t => t.type === 'expense' && t.date >= sevenDaysAgoStr);
+    
+    const totalRecentExpenses = recentExpenses.reduce((sum, t) => sum + t.amount, 0);
+    const avgDailySpending = recentExpenses.length > 0 ? totalRecentExpenses / 7 : 0;
+    
+    // Generate spending insight notification and send NTFY push
+    let spendingInsight = null;
+    if (todaySpending > 0 && avgDailySpending > 0 && todaySpending < avgDailySpending * 0.5) {
+      const savedAmount = avgDailySpending - todaySpending;
+      spendingInsight = {
+        type: 'success',
+        title: '🎉 Great job saving today!',
+        message: `You spent only ₹${todaySpending} today, which is ₹${Math.round(savedAmount)} less than your average!`,
+        savedAmount: Math.round(savedAmount),
+        suggestions: [
+          `Add ₹${Math.round(savedAmount)} to your emergency fund`,
+          `Put it in your recurring deposit`,
+          `Invest in a short-term SIP`
+        ]
+      };
+    } else if (avgDailySpending > 0 && todaySpending > avgDailySpending * 1.5) {
+      spendingInsight = {
+        type: 'warning',
+        title: '⚠️ High spending today',
+        message: `You've spent ₹${todaySpending} today, which is higher than your daily average of ₹${Math.round(avgDailySpending)}.`,
+        suggestions: [
+          'Review your transactions',
+          'Avoid impulse purchases',
+        ]
+      };
+    }
+    
     // AI Suggestions
     const suggestions = generateAISuggestions(user, incomeTotal, expenseTotal);
     
@@ -209,7 +259,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
         name: user.name,
         trustScore: user.trustScore,
         dailySavings: user.dailySavings,
-        walletBalance: user.walletBalance || 0
+        walletBalance: calculatedWalletBalance
       },
       financialHealthScore: Math.min(healthScore, 100),
       incomeSummary: {
@@ -221,7 +271,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
         total: expenseTotal,
         recent: transactions.filter(t => t.type === 'expense').slice(0, 5)
       },
-      walletBalance: user.walletBalance || 0,
+      walletBalance: calculatedWalletBalance,
       savingsProgress: {
         total: savingsTotal,
         daily: user.dailySavings,
@@ -230,7 +280,8 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
       },
       goals: goals,
       transactions: transactions.slice(0, 10),
-      aiSuggestions: suggestions
+      aiSuggestions: suggestions,
+      spendingInsight: spendingInsight
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching dashboard', error: err.message });
@@ -291,12 +342,22 @@ app.post('/api/financial-twin/predict', authMiddleware, async (req, res) => {
 // 5. Transaction Routes
 app.post('/api/transactions', authMiddleware, async (req, res) => {
   try {
-    const { type, amount, description } = req.body;
+    let { type, amount, description, date } = req.body;
+    
+    // Convert type to lowercase to match schema enum
+    type = type.toLowerCase();
+    
+    // Store date as string in YYYY-MM-DD format
+    const transactionDate = date || new Date().toISOString().split('T')[0];
+    
+    console.log('Creating transaction:', { type, amount, description, date: transactionDate });
+    
     const transaction = new Transaction({
       userId: req.userId,
       type,
-      amount,
-      description
+      amount: Number(amount),
+      description,
+      date: transactionDate
     });
     
     await transaction.save();
@@ -304,13 +365,11 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
     // Update user trust score and wallet balance
     const updateObj = { $inc: { trustScore: type === 'savings' ? 2 : 0.5 } };
     
-    // Update wallet balance based on transaction type
+    // Update wallet balance based on transaction type (savings doesn't affect wallet)
     if (type === 'income') {
       updateObj.$inc.walletBalance = amount;
     } else if (type === 'expense') {
       updateObj.$inc.walletBalance = -amount;
-    } else if (type === 'savings') {
-      updateObj.$inc.walletBalance = amount;
     }
     
     await User.findByIdAndUpdate(req.userId, updateObj);
@@ -334,6 +393,26 @@ app.get('/api/transactions', authMiddleware, async (req, res) => {
     res.json(transactions);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching transactions' });
+  }
+});
+
+// Get transactions for a specific month (for calendar view)
+app.get('/api/transactions/month/:year/:month', authMiddleware, async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
+    const endYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+    const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`;
+    
+    const transactions = await Transaction.find({
+      userId: req.userId,
+      date: { $gte: startDate, $lt: endDate }
+    }).sort({ date: -1 });
+    
+    res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching monthly transactions' });
   }
 });
 
@@ -388,7 +467,6 @@ app.put('/api/goals/:id/progress', authMiddleware, async (req, res) => {
 // 7. Community Routes
 app.get('/api/community/leaderboard', authMiddleware, async (req, res) => {
   try {
-    // Get top savers (mock community data)
     const topSavers = await User.find()
       .sort({ trustScore: -1 })
       .limit(10)
@@ -401,7 +479,7 @@ app.get('/api/community/leaderboard', authMiddleware, async (req, res) => {
         trustScore: user.trustScore,
         dailySavings: user.dailySavings
       })),
-      yourRank: 5 // Simplified - would calculate in production
+      yourRank: 5
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching leaderboard' });
@@ -414,7 +492,6 @@ app.post('/api/ai/chat', authMiddleware, async (req, res) => {
     const { message } = req.body;
     const user = await User.findById(req.userId);
     
-    // Build context about the user for personalized responses
     const userContext = `
       User Profile:
       - Name: ${user.name}
@@ -425,7 +502,6 @@ app.post('/api/ai/chat', authMiddleware, async (req, res) => {
       - Language: ${user.language}
     `;
     
-    // Create a system prompt for financial assistant
     const systemPrompt = `You are FinWeave AI, a friendly and helpful financial assistant for a fintech app called FinWeave. 
     Your role is to help users with:
     - Personal finance management
@@ -439,7 +515,6 @@ app.post('/api/ai/chat', authMiddleware, async (req, res) => {
     
     Please provide helpful, practical advice in a friendly tone. When giving financial recommendations, always consider the user's income level and suggest realistic solutions. Use Indian Rupees (₹) for currency. Keep responses concise but informative. If you're unsure about specific financial advice, suggest they consult a financial advisor.`;
     
-    // Generate response using Gemini API
     const chat = model.startChat({
       generationConfig: {
         temperature: 0.7,
@@ -459,7 +534,6 @@ app.post('/api/ai/chat', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error('Gemini API Error:', err);
-    // Fallback to mock response if Gemini fails
     const user = await User.findById(req.userId);
     const fallbackResponse = generateAIResponse(req.body.message, user);
     res.json({ 
@@ -477,55 +551,35 @@ app.get('/api/education/content', (req, res) => {
       title: 'Budgeting 101',
       description: 'Learn how to create a simple budget that works for you',
       category: 'basics',
-      tips: [
-        'Track your daily expenses',
-        'Separate needs from wants',
-        'Save 20% of your income'
-      ]
+      tips: ['Track your daily expenses', 'Separate needs from wants', 'Save 20% of your income']
     },
     {
       id: 2,
       title: 'Emergency Fund',
       description: 'Why you need an emergency fund and how to build one',
       category: 'savings',
-      tips: [
-        'Start with small amounts',
-        'Aim for 3-6 months of expenses',
-        'Keep it separate from daily savings'
-      ]
+      tips: ['Start with small amounts', 'Aim for 3-6 months of expenses', 'Keep it separate from daily savings']
     },
     {
       id: 3,
       title: 'Smart Savings',
       description: 'Strategies to maximize your savings without much money',
       category: 'savings',
-      tips: [
-        'Save before you spend',
-        'Use the 50-30-20 rule',
-        'Automate your savings'
-      ]
+      tips: ['Save before you spend', 'Use the 50-30-20 rule', 'Automate your savings']
     },
     {
       id: 4,
       title: 'Debt Management',
       description: 'How to manage and pay off debt effectively',
       category: 'debt',
-      tips: [
-        'Pay more than minimum',
-        'Focus on high-interest debt first',
-        'Consider debt consolidation'
-      ]
+      tips: ['Pay more than minimum', 'Focus on high-interest debt first', 'Consider debt consolidation']
     },
     {
       id: 5,
       title: 'Financial Goals',
       description: 'Set and achieve your financial goals',
       category: 'planning',
-      tips: [
-        'Make goals specific and measurable',
-        'Break big goals into small steps',
-        'Review progress regularly'
-      ]
+      tips: ['Make goals specific and measurable', 'Break big goals into small steps', 'Review progress regularly']
     }
   ]);
 });
@@ -572,7 +626,6 @@ function generateAISuggestions(user, income, expense) {
 function generateAIResponse(message, user) {
   const lowerMessage = message.toLowerCase();
   
-  // Savings related
   if (lowerMessage.includes('save') || lowerMessage.includes('saving')) {
     return {
       text: `Great question about savings! Based on your income of ₹${user.income} (${user.incomeType}), I recommend saving at least 20% - that's about ₹${Math.round(user.income * 0.2)} ${user.incomeType}. Even saving ₹50 daily can help you reach your goals faster!`,
@@ -580,7 +633,6 @@ function generateAIResponse(message, user) {
     };
   }
   
-  // Budget related
   if (lowerMessage.includes('budget') || lowerMessage.includes('spend')) {
     return {
       text: `Here's a simple budget for you:\n\n• Needs (50%): ₹${Math.round(user.income * 0.5)}\n• Wants (30%): ₹${Math.round(user.income * 0.3)}\n• Savings (20%): ₹${Math.round(user.income * 0.2)}\n\nThis simple framework can help you manage your money better!`,
@@ -588,7 +640,6 @@ function generateAIResponse(message, user) {
     };
   }
   
-  // Goal related
   if (lowerMessage.includes('goal') || lowerMessage.includes('target')) {
     return {
       text: `Setting financial goals is great! To reach a goal of ₹10,000, you could save ₹100 daily for about 3-4 months. Use our Financial Twin to simulate different scenarios!`,
@@ -596,31 +647,6 @@ function generateAIResponse(message, user) {
     };
   }
   
-  // Debt related
-  if (lowerMessage.includes('debt') || lowerMessage.includes('loan')) {
-    return {
-      text: `For debt management, I recommend:\n\n1. Pay more than minimum payments\n2. Focus on high-interest debt first\n3. Consider the avalanche method\n\nWould you like help creating a debt payoff plan?`,
-      action: 'debt_calculator'
-    };
-  }
-  
-  // Investment related
-  if (lowerMessage.includes('invest') || lowerMessage.includes('investment')) {
-    return {
-      text: `For beginners, I suggest starting with:\n\n• Fixed Deposits (safe, low returns)\n• Public Provident Fund (long-term)\n• Mutual Funds (diversified)\n\nStart small and learn as you go!`,
-      action: 'learn_investing'
-    };
-  }
-  
-  // Emergency fund
-  if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent')) {
-    return {
-      text: `An emergency fund is crucial! Aim for 3-6 months of expenses. Start building yours today - even ₹5000-10,000 can help with minor emergencies.`,
-      action: 'set_emergency_goal'
-    };
-  }
-  
-  // Default responses
   const defaultResponses = [
     `That's a great question! Remember, small steps lead to big changes. Your current trust score is ${user.trustScore}. Keep making smart financial decisions!`,
     `I'm here to help! Could you tell me more about what you'd like to know? I can help with savings, budgeting, goals, and more.`,
@@ -631,6 +657,41 @@ function generateAIResponse(message, user) {
     text: defaultResponses[Math.floor(Math.random() * defaultResponses.length)],
     action: 'suggest_topics'
   };
+}
+
+// NTFY Push Notification Function
+function sendNTFYNotification(userId, title, message) {
+  const userTopic = `finweave-${userId.toString()}`;
+  
+  const postData = JSON.stringify({
+    topic: userTopic,
+    title: title,
+    message: message,
+    priority: 'high',
+    tags: ['money', 'wallet', 'alert']
+  });
+  
+  const options = {
+    hostname: 'ntfy.sh',
+    port: 443,
+    path: `/${userTopic}`,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': postData.length
+    }
+  };
+  
+  const req = https.request(options, (res) => {
+    console.log('📱 NTFY Notification sent to user:', userId, '- Title:', title);
+  });
+  
+  req.on('error', (e) => {
+    console.log('📱 NTFY Error:', e.message);
+  });
+  
+  req.write(postData);
+  req.end();
 }
 
 // Create demo user if not exists
@@ -672,4 +733,3 @@ mongoose.connect(MONGO_URI)
       console.log(`✅ Server running on http://localhost:${PORT} (without MongoDB)`);
     });
   });
-

@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
+import Summary from './pages/Summary';
 import FinancialTwin from './pages/FinancialTwin';
 import MicroSavings from './pages/MicroSavings';
 import Community from './pages/Community';
@@ -95,6 +96,7 @@ function App() {
           
           {/* Protected Routes */}
           <Route path="/dashboard" element={user ? <DashboardWithLayout /> : <Navigate to="/login" />} />
+          <Route path="/summary" element={user ? <SummaryWithLayout /> : <Navigate to="/login" />} />
           <Route path="/financial-twin" element={user ? <FinancialTwinWithLayout /> : <Navigate to="/login" />} />
           <Route path="/micro-savings" element={user ? <MicroSavingsWithLayout /> : <Navigate to="/login" />} />
           <Route path="/community" element={user ? <CommunityWithLayout /> : <Navigate to="/login" />} />
@@ -119,6 +121,20 @@ function DashboardWithLayout() {
         <Header />
         <main className="pt-20 px-6">
           <Dashboard />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function SummaryWithLayout() {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 ml-64">
+        <Header />
+        <main className="pt-20 px-6">
+          <Summary />
         </main>
       </div>
     </div>

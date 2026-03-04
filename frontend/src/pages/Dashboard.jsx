@@ -79,8 +79,6 @@ export default function Dashboard() {
     );
   }
 
-  const healthScore = dashboardData?.financialHealthScore || 50;
-  
   // Chart configurations
   const savingsChartData = {
     labels: dashboardData?.savingsProgress ? 
@@ -125,45 +123,60 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Financial Health Score */}
-        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Health Score</p>
-              <p className="text-3xl font-bold text-primary-600">{healthScore}</p>
-            </div>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center trust-pulse ${
-              healthScore >= 70 ? 'bg-primary-100' : healthScore >= 50 ? 'bg-yellow-100' : 'bg-red-100'
-            }`}>
-              <span className="text-2xl">❤️</span>
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary-500 rounded-full transition-all duration-500"
-                style={{ width: `${healthScore}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {healthScore >= 70 ? 'Excellent!' : healthScore >= 50 ? 'Good, keep improving!' : 'Needs attention'}
-            </p>
-          </div>
-        </div>
-
         {/* Income */}
         <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">{dashboardData?.incomeSummary?.type || 'Monthly'} Income</p>
+              <p className="text-sm text-gray-500">Total Income</p>
               <p className="text-3xl font-bold text-trust-600">
-                ₹{dashboardData?.incomeSummary?.monthly?.toLocaleString() || 0}
+                ₹{dashboardData?.incomeSummary?.total?.toLocaleString() || 0}
               </p>
             </div>
             <div className="w-16 h-16 rounded-full bg-trust-100 flex items-center justify-center">
               <span className="text-2xl">💵</span>
             </div>
           </div>
+        </div>
+
+        {/* Total Expenses */}
+        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Expenses</p>
+              <p className="text-3xl font-bold text-red-600">
+                ₹{dashboardData?.spendingSummary?.total?.toLocaleString() || 0}
+              </p>
+            </div>
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+              <span className="text-2xl">📉</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            {dashboardData?.spendingSummary?.recent?.length || 0} transactions
+          </p>
+        </div>
+
+        {/* Wallet Balance (Remaining Amount) */}
+        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Wallet Balance</p>
+              <p className={`text-3xl font-bold ${
+                (dashboardData?.walletBalance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                ₹{Math.abs(dashboardData?.walletBalance || 0).toLocaleString()}
+                {(dashboardData?.walletBalance || 0) < 0 && ' (Overdrawn)'}
+              </p>
+            </div>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              (dashboardData?.walletBalance || 0) >= 0 ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              <span className="text-2xl">💳</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Income - Expenses = Remaining
+          </p>
         </div>
 
         {/* Savings */}
@@ -182,22 +195,6 @@ export default function Dashboard() {
           <p className="text-xs text-gray-500 mt-2">
             ₹{dashboardData?.savingsProgress?.monthly?.toLocaleString() || 0}/month
           </p>
-        </div>
-
-        {/* Trust Score */}
-        <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Trust Score</p>
-              <p className="text-3xl font-bold text-trust-600">
-                {dashboardData?.user?.trustScore || 50}
-              </p>
-            </div>
-            <div className="w-16 h-16 rounded-full bg-trust-100 flex items-center justify-center">
-              <span className="text-2xl">⭐</span>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">Community reputation</p>
         </div>
       </div>
 
@@ -360,4 +357,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

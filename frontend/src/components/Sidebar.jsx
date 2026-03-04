@@ -3,6 +3,7 @@ import { useApp } from '../App';
 
 const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+  { path: '/summary', label: 'Monthly Summary', icon: '📈' },
   { path: '/financial-twin', label: 'Financial Twin', icon: '🔮' },
   { path: '/micro-savings', label: 'Micro Savings', icon: '💰' },
   { path: '/goals', label: 'Goals', icon: '🎯' },

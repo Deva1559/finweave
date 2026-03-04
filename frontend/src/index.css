@@ -1,6 +1,21 @@
+/*
+  Tailwind directives are processed by PostCSS (tailwindcss plugin).
+  Some CSS linters / language servers that don't understand Tailwind will warn:
+  "Unknown at rule @tailwind".
+
+  If you want to silence that warning without affecting Tailwind output,
+  the most compatible approach is to add a linter ignore comment for the
+  "unknown at rules" family.
+*/
+
+/* stylelint-disable at-rule-no-unknown */
+/* postcss-ignore-next-line */
 @tailwind base;
+/* postcss-ignore-next-line */
 @tailwind components;
+/* postcss-ignore-next-line */
 @tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
 
 /* Custom styles */
 :root {
@@ -117,4 +132,3 @@ html {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-

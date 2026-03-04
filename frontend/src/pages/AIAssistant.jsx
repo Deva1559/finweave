@@ -73,13 +73,31 @@ export default function AIAssistant() {
   };
 
   const quickQuestions = [
-    { label: 'How to save money?', icon: '💰' },
-    { label: 'Create a budget', icon: '📊' },
-    { label: 'Set financial goals', icon: '🎯' },
-    { label: 'Emergency fund', icon: '🏠' },
-    { label: 'Pay off debt', icon: '💳' },
-    { label: 'Investment basics', icon: '📈' }
+    { label: 'How to save money?', icon: '💰', category: 'savings' },
+    { label: 'Analyze my spending', icon: '📊', category: 'analysis' },
+    { label: 'Create a budget', icon: '💵', category: 'budget' },
+    { label: 'Set financial goals', icon: '🎯', category: 'goals' },
+    { label: 'Emergency fund', icon: '🏠', category: 'emergency' },
+    { label: 'Pay off debt', icon: '💳', category: 'debt' },
+    { label: 'Investment basics', icon: '📈', category: 'investing' },
+    { label: 'Tax saving tips', icon: '🧾', category: 'tax' },
+    { label: 'Retirement planning', icon: '🏖️', category: 'retirement' },
+    { label: 'Insurance guide', icon: '🛡️', category: 'insurance' }
   ];
+
+  // Extra AI Features
+  const aiFeatures = [
+    { title: '📈 Spending Analysis', description: 'Get insights on your spending patterns', icon: '📈' },
+    { title: '🎯 Goal Tracker', description: 'Track and optimize your financial goals', icon: '🎯' },
+    { title: '💡 Smart Budget', description: 'AI-powered budget recommendations', icon: '💡' },
+    { title: '⚠️ Expense Alerts', description: 'Get notified of unusual spending', icon: '⚠️' },
+    { title: '📊 Monthly Report', description: 'Your monthly financial summary', icon: '📊' },
+    { title: '🔮 Future Projection', description: 'See your financial future', icon: '🔮' }
+  ];
+
+  const handleFeatureClick = (question) => {
+    setInput(question);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in h-[calc(100vh-140px)]">
@@ -104,6 +122,25 @@ export default function AIAssistant() {
                 <span className="text-sm">{q.label}</span>
               </button>
             ))}
+          </div>
+
+          {/* AI Features */}
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <h4 className="font-semibold text-sm mb-3">🤖 AI Features</h4>
+            <div className="space-y-2">
+              {aiFeatures.map((feature, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleFeatureClick(feature.title.replace(feature.icon + ' ', ''))}
+                  className="w-full p-2 text-left bg-gradient-to-r from-primary-50 to-trust-50 rounded-xl hover:from-primary-100 hover:to-trust-100 transition-all flex items-center gap-2"
+                >
+                  <span className="text-lg">{feature.icon}</span>
+                  <div className="text-left">
+                    <p className="text-xs font-medium text-gray-800">{feature.title}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Voice Input Simulation */}
