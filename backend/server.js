@@ -3,6 +3,12 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Gemini API Configuration
+const GEMINI_API_KEY = 'AIzaSyD2R-EAUFN4jpUCDGWuQpYPP9v8JGxIWHQ';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -385,19 +391,64 @@ app.get('/api/community/leaderboard', authMiddleware, async (req, res) => {
   }
 });
 
-// 8. AI Assistant Routes
+// 8. AI Assistant Routes - Using Gemini API
 app.post('/api/ai/chat', authMiddleware, async (req, res) => {
   try {
     const { message } = req.body;
     const user = await User.findById(req.userId);
     
-    const response = generateAIResponse(message, user);
+    // Build context about the user for personalized responses
+    const userContext = `
+      User Profile:
+      - Name: ${user.name}
+      - Income: ₹${user.income} (${user.incomeType})
+      - Daily Savings: ₹${user.dailySavings}
+      - Trust Score: ${user.trustScore}
+      - Financial Goals: ${user.financialGoals?.join(', ') || 'Not set'}
+      - Language: ${user.language}
+    `;
+    
+    // Create a system prompt for financial assistant
+    const systemPrompt = `You are FinWeave AI, a friendly and helpful financial assistant for a fintech app called FinWeave. 
+    Your role is to help users with:
+    - Personal finance management
+    - Savings advice and tips
+    - Budget creation and tracking
+    - Debt management strategies
+    - Investment guidance for beginners
+    - Financial goal setting
+    
+    ${userContext}
+    
+    Please provide helpful, practical advice in a friendly tone. When giving financial recommendations, always consider the user's income level and suggest realistic solutions. Use Indian Rupees (₹) for currency. Keep responses concise but informative. If you're unsure about specific financial advice, suggest they consult a financial advisor.`;
+    
+    // Generate response using Gemini API
+    const chat = model.startChat({
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 500,
+      },
+    });
+    
+    const result = await chat.sendMessage(`${systemPrompt}\n\nUser question: ${message}`);
+    const geminiResponse = result.response.text();
+    
     res.json({ 
-      response,
+      response: {
+        text: geminiResponse,
+        action: 'gemini_ai'
+      },
       timestamp: new Date()
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error getting AI response' });
+    console.error('Gemini API Error:', err);
+    // Fallback to mock response if Gemini fails
+    const user = await User.findById(req.userId);
+    const fallbackResponse = generateAIResponse(req.body.message, user);
+    res.json({ 
+      response: fallbackResponse,
+      timestamp: new Date()
+    });
   }
 });
 
@@ -565,10 +616,35 @@ function generateAIResponse(message, user) {
   };
 }
 
+// Create demo user if not exists
+const createDemoUser = async () => {
+  const demoEmail = 'demo@finweave.com';
+  const existingDemo = await User.findOne({ email: demoEmail });
+  
+  if (!existingDemo) {
+    const hashedPassword = await bcrypt.hash('demo123', 10);
+    const demoUser = new User({
+      name: 'Demo User',
+      email: demoEmail,
+      password: hashedPassword,
+      language: 'English',
+      incomeType: 'monthly',
+      income: 30000,
+      dailySavings: 200,
+      financialGoals: ['Emergency Fund', 'New Phone', 'Vacation'],
+      trustScore: 75,
+      savingsGroups: ['Daily Savers', 'Weekend Warriors']
+    });
+    await demoUser.save();
+    console.log('✅ Demo user created: demo@finweave.com / demo123');
+  }
+};
+
 // Connect to MongoDB and start server
 mongoose.connect(MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ Connected to MongoDB');
+    await createDemoUser();
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
     });
