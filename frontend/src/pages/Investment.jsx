@@ -25,10 +25,17 @@ export default function Investment() {
     try {
       setLoading(true);
       
+      console.log('Fetching from:', `${API_URL}/investments/gold-price`);
+      
       // Fetch gold price
       const priceResponse = await fetch(`${API_URL}/investments/gold-price`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!priceResponse.ok) {
+        throw new Error(`HTTP ${priceResponse.status}: ${priceResponse.statusText}`);
+      }
+      
       const priceData = await priceResponse.json();
       setGoldPrice(priceData);
 
@@ -36,6 +43,11 @@ export default function Investment() {
       const portfolioResponse = await fetch(`${API_URL}/investments/portfolio`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!portfolioResponse.ok) {
+        throw new Error(`HTTP ${portfolioResponse.status}: ${portfolioResponse.statusText}`);
+      }
+      
       const portfolioData = await portfolioResponse.json();
       setPortfolio(portfolioData);
 
@@ -43,12 +55,17 @@ export default function Investment() {
       const historyResponse = await fetch(`${API_URL}/investments/history?limit=100`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!historyResponse.ok) {
+        throw new Error(`HTTP ${historyResponse.status}: ${historyResponse.statusText}`);
+      }
+      
       const historyData = await historyResponse.json();
       setTransactions(historyData.investments || []);
 
     } catch (err) {
       console.error('Error fetching investment data:', err);
-      setError('Failed to load investment data');
+      setError('Failed to load investment data. Make sure backend is running on port 5002.');
     } finally {
       setLoading(false);
     }
