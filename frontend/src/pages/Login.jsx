@@ -127,12 +127,79 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login clicked');
+  const handleGoogleLogin = async () => {
+    try {
+      // Check if Google Identity Services is loaded
+      if (window.google) {
+        // Use the Google Identity Services
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+          scope: 'email profile openid',
+          callback: async (response) => {
+            if (response.access_token) {
+              // Send the token to backend for verification
+              try {
+                const res = await fetch('/api/auth/google', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ token: response.access_token })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                  setIsSuccess(true);
+                  login(data.user, data.token);
+                  setupNotifications(data.token);
+                  setTimeout(() => navigate('/dashboard'), 800);
+                } else {
+                  // If backend doesn't support OAuth, show message
+                  setError('Google login not configured on server. Please use email login.');
+                }
+              } catch (err) {
+                setError('Failed to complete Google login');
+              }
+            }
+          },
+        });
+        client.requestAccessToken({ prompt: 'select_account' });
+      } else {
+        // Fallback: Open Google OAuth URL in popup
+        const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+        const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${redirectUri}&response_type=token&scope=email%20profile&prompt=select_account`;
+        
+        // Open in popup
+        const width = 500;
+        const height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        
+        window.open(authUrl, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
+      }
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError('Failed to initiate Google login. Please try again.');
+    }
   };
 
-  const handleAppleLogin = () => {
-    console.log('Apple login clicked');
+  const handleAppleLogin = async () => {
+    try {
+      // Apple Sign In requires a redirect flow
+      const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID || 'YOUR_APPLE_CLIENT_ID';
+      const redirectUri = `${window.location.origin}/api/auth/apple/callback`;
+      const state = Math.random().toString(36).substring(7);
+      
+      const authUrl = `https://appleid.apple.com/auth/authorize?client_id=${appleClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20name&state=${state}`;
+      
+      // Store state for verification
+      sessionStorage.setItem('apple_oauth_state', state);
+      
+      // Redirect to Apple
+      window.location.href = authUrl;
+    } catch (err) {
+      console.error('Apple login error:', err);
+      setError('Failed to initiate Apple login. Please try again.');
+    }
   };
 
   const handleDemoLogin = () => {
