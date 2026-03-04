@@ -208,72 +208,73 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-trust-50 p-4 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-primary-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-72 h-72 bg-trust-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-trust-50 p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Animated Background Elements - hidden on small mobile for better performance */}
+      <div className="absolute top-0 left-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob hidden sm:block"></div>
+      <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-trust-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 hidden sm:block"></div>
+      <div className="absolute -bottom-8 left-10 sm:left-20 w-48 h-48 sm:w-64 sm:h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 hidden sm:block"></div>
       
-      {/* Decorative grid pattern */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+      {/* Decorative grid pattern - hidden on mobile */}
+      <div className="absolute inset-0 opacity-[0.03] hidden sm:block" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
       
-      <div className="w-full max-w-md relative z-10">
+      {/* Scrollable container for mobile */}
+      <div className="w-full max-w-md relative z-10 overflow-y-auto max-h-screen py-4">
         {/* Logo & Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex justify-center mb-3 sm:mb-4">
             <div className="relative">
               <img 
                 src="/src/assets/logo.png" 
                 alt="FinWeave Logo" 
-                className={`h-20 w-auto object-contain transition-all duration-500 ${isSuccess ? 'scale-110' : 'scale-100'}`}
+                className={`h-16 sm:h-20 w-auto object-contain transition-all duration-500 ${isSuccess ? 'scale-110' : 'scale-100'}`}
               />
               {isSuccess && (
-                <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1 animate-bounce">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-green-500 rounded-full p-0.5 sm:p-1 animate-bounce">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               )}
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1 sm:mb-2">
             {isSuccess ? 'Welcome back!' : 'Welcome back'}
           </h2>
-          <p className="text-gray-500">Please login to continue to your dashboard</p>
+          <p className="text-gray-500 text-sm sm:text-base">Please login to continue to your dashboard</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-white/20 relative overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 border border-white/20 relative overflow-hidden">
           {/* Success overlay */}
           {isSuccess && (
             <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-20 animate-fade-in">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="text-center px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-10 sm:w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-lg font-semibold text-gray-800">Login successful!</p>
-                <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+                <p className="text-base sm:text-lg font-semibold text-gray-800">Login successful!</p>
+                <p className="text-xs sm:text-sm text-gray-500">Redirecting to dashboard...</p>
               </div>
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-red-50 border border-red-100 text-red-600 px-3 py-2 sm:px-4 sm:py-3 rounded-xl text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{error}</span>
+                <span className="text-xs sm:text-sm">{error}</span>
               </div>
             )}
 
             {/* Email Input with Focus Effects */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-              <div className={`relative transition-all duration-300 ${emailFocused ? 'transform scale-[1.02]' : ''}`}>
-                <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 ${emailFocused ? 'text-primary-500' : 'text-gray-400'}`}>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Email Address</label>
+              <div className={`relative transition-all duration-300 ${emailFocused ? 'transform scale-[1.01] sm:scale-[1.02]' : ''}`}>
+                <div className={`absolute inset-y-0 left-0 pl-2.5 sm:pl-3 flex items-center pointer-events-none transition-colors duration-300 ${emailFocused ? 'text-primary-500' : 'text-gray-400'}`}>
                   <MailIcon />
                 </div>
                 <input
@@ -282,7 +283,7 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
-                  className={`input-field pl-10 transition-all duration-300 ${emailFocused ? 'border-primary-500 shadow-lg shadow-primary-500/20' : ''}`}
+                  className={`input-field pl-9 sm:pl-10 py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-300 ${emailFocused ? 'border-primary-500 shadow-lg shadow-primary-500/20' : ''}`}
                   placeholder="Enter your email"
                   required
                 />
@@ -291,14 +292,14 @@ export default function Login() {
 
             {/* Password Input with Focus Effects */}
             <div>
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-1.5 sm:mb-2">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
-                <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">
+                <Link to="/forgot-password" className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">
                   Forgot password?
                 </Link>
               </div>
-              <div className={`relative transition-all duration-300 ${passwordFocused ? 'transform scale-[1.02]' : ''}`}>
-                <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 ${passwordFocused ? 'text-primary-500' : 'text-gray-400'}`}>
+              <div className={`relative transition-all duration-300 ${passwordFocused ? 'transform scale-[1.01] sm:scale-[1.02]' : ''}`}>
+                <div className={`absolute inset-y-0 left-0 pl-2.5 sm:pl-3 flex items-center pointer-events-none transition-colors duration-300 ${passwordFocused ? 'text-primary-500' : 'text-gray-400'}`}>
                   <LockIcon />
                 </div>
                 <input
@@ -307,14 +308,14 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
-                  className={`input-field pl-10 pr-10 transition-all duration-300 ${passwordFocused ? 'border-primary-500 shadow-lg shadow-primary-500/20' : ''}`}
+                  className={`input-field pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-300 ${passwordFocused ? 'border-primary-500 shadow-lg shadow-primary-500/20' : ''}`}
                   placeholder="Enter your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-2.5 sm:pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
@@ -322,7 +323,7 @@ export default function Login() {
               
               {/* Password Strength Indicator */}
               {password && (
-                <div className="mt-2">
+                <div className="mt-1.5 sm:mt-2">
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
@@ -348,26 +349,26 @@ export default function Login() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-9 h-5 sm:w-10 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                 </div>
-                <span className="ml-3 text-sm text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
+                <span className="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
               </label>
             </div>
 
             <button
               type="submit"
               disabled={loading || isSuccess}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3.5 relative overflow-hidden group"
+              className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 sm:py-3.5 text-sm sm:text-base relative overflow-hidden group"
             >
               {loading ? (
                 <>
-                  <div className="spinner"></div>
+                  <div className="spinner w-5 h-5 sm:w-6 sm:h-6"></div>
                   <span>Logging in...</span>
                 </>
               ) : (
                 <>
                   <span className="relative z-10 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
                     Login
@@ -382,27 +383,27 @@ export default function Login() {
           <button
             type="button"
             onClick={handleDemoLogin}
-            className="w-full mt-4 py-2 text-sm text-gray-500 hover:text-primary-600 transition-colors"
+            className="w-full mt-3 sm:mt-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-500 hover:text-primary-600 transition-colors"
           >
             Use demo credentials
           </button>
 
           {/* Divider */}
-          <div className="relative my-5">
+          <div className="relative my-4 sm:my-5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-gray-400">or continue with</span>
+            <div className="relative flex justify-center text-xs sm:text-sm">
+              <span className="px-2 sm:px-3 bg-white text-gray-400">or continue with</span>
             </div>
           </div>
 
-          {/* Social Login Buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Social Login Buttons - stacked on very small screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-lg transition-all duration-200 font-medium text-gray-700 group"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white border-2 border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-lg transition-all duration-200 font-medium text-gray-700 group text-sm sm:text-base"
             >
               <GoogleIcon />
               <span className="group-hover:text-gray-900 transition-colors">Google</span>
@@ -410,19 +411,19 @@ export default function Login() {
             <button
               type="button"
               onClick={handleAppleLogin}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-lg transition-all duration-200 font-medium text-gray-700 group"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white border-2 border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-lg transition-all duration-200 font-medium text-gray-700 group text-sm sm:text-base"
             >
               <AppleIcon />
               <span className="group-hover:text-gray-900 transition-colors">Apple</span>
             </button>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
+          <div className="mt-5 sm:mt-6 text-center">
+            <p className="text-gray-600 text-sm">
               Don't have an account?{' '}
               <Link to="/signup" className="text-primary-600 font-semibold hover:text-primary-700 hover:underline transition-all inline-flex items-center gap-1 group">
                 Sign up
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </Link>
@@ -431,7 +432,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-400 text-sm mt-6">
+        <p className="text-center text-gray-400 text-xs sm:text-sm mt-4 sm:mt-6 px-4">
           By continuing, you agree to our{' '}
           <a href="#" className="text-primary-600 hover:underline">Terms</a>
           {' '}and{' '}
