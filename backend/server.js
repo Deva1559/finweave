@@ -70,6 +70,9 @@ const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const Goal = mongoose.model('Goal', goalSchema);
 
+// Import Investment routes
+const investmentRoutes = require('./routes/investments');
+
 // Auth Middleware
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -840,6 +843,9 @@ const createDemoUser = async () => {
     console.log('✅ Demo user created: demo@finweave.com / demo123');
   }
 };
+
+// Use Investment routes
+app.use('/api/investments', investmentRoutes);
 
 // Connect to MongoDB and start server
 mongoose.connect(MONGO_URI)

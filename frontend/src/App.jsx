@@ -16,6 +16,7 @@ import Community from './pages/Community';
 import AIAssistant from './pages/AIAssistant';
 import Education from './pages/Education';
 import Goals from './pages/Goals';
+import Investment from './pages/Investment';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -142,7 +143,8 @@ function App() {
           <Route path="/community" element={user ? <CommunityWithLayout /> : <Navigate to="/login" />} />
           <Route path="/ai-assistant" element={user ? <AIAssistantWithLayout /> : <Navigate to="/login" />} />
           <Route path="/education" element={user ? <EducationWithLayout /> : <Navigate to="/login" />} />
-          <Route path="/goals" element={user ? <GoalsWithLayout /> : <Navigate to="/login" />} />
+<Route path="/goals" element={user ? <GoalsWithLayout /> : <Navigate to="/login" />} />
+          <Route path="/investment" element={user ? <InvestmentWithLayout /> : <Navigate to="/login" />} />
           
           {/* Default Redirect */}
           <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
@@ -259,6 +261,20 @@ function GoalsWithLayout() {
         <Header />
         <main className="pt-20 px-6">
           <Goals />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function InvestmentWithLayout() {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 ml-64">
+        <Header />
+        <main className="pt-20 px-6">
+          <Investment />
         </main>
       </div>
     </div>
