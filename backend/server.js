@@ -847,6 +847,11 @@ const createDemoUser = async () => {
 // Use Investment routes
 app.use('/api/investments', investmentRoutes);
 
+// Test endpoint to verify investments routes are loaded
+app.get('/api/investments/test', (req, res) => {
+  res.json({ message: 'Investment routes are working!' });
+});
+
 // Connect to MongoDB and start server
 mongoose.connect(MONGO_URI)
   .then(async () => {
