@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
   incomeType: { type: String, default: 'daily' },
   income: { type: Number, default: 0 },
   dailySavings: { type: Number, default: 0 },
+  walletBalance: { type: Number, default: 0 }, // Wallet balance field
   financialGoals: [String],
   trustScore: { type: Number, default: 50 },
   savingsGroups: [{ type: String }],
@@ -207,7 +208,8 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
       user: {
         name: user.name,
         trustScore: user.trustScore,
-        dailySavings: user.dailySavings
+        dailySavings: user.dailySavings,
+        walletBalance: user.walletBalance || 0
       },
       financialHealthScore: Math.min(healthScore, 100),
       incomeSummary: {
@@ -219,6 +221,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
         total: expenseTotal,
         recent: transactions.filter(t => t.type === 'expense').slice(0, 5)
       },
+      walletBalance: user.walletBalance || 0,
       savingsProgress: {
         total: savingsTotal,
         daily: user.dailySavings,
@@ -298,12 +301,26 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
     
     await transaction.save();
     
-    // Update user trust score
-    await User.findByIdAndUpdate(req.userId, {
-      $inc: { trustScore: type === 'savings' ? 2 : 0.5 }
-    });
+    // Update user trust score and wallet balance
+    const updateObj = { $inc: { trustScore: type === 'savings' ? 2 : 0.5 } };
     
-    res.status(201).json(transaction);
+    // Update wallet balance based on transaction type
+    if (type === 'income') {
+      updateObj.$inc.walletBalance = amount;
+    } else if (type === 'expense') {
+      updateObj.$inc.walletBalance = -amount;
+    } else if (type === 'savings') {
+      updateObj.$inc.walletBalance = amount;
+    }
+    
+    await User.findByIdAndUpdate(req.userId, updateObj);
+    
+    const updatedUser = await User.findById(req.userId);
+    
+    res.status(201).json({
+      ...transaction.toObject(),
+      walletBalance: updatedUser.walletBalance
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error creating transaction' });
   }
