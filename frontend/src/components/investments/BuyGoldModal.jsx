@@ -3,7 +3,7 @@ import { useApp } from '../../App';
 import { loadRazorpay } from '../../utils/razorpay';
 
 export default function BuyGoldModal({ isOpen, onClose, goldPrice, onSuccess }) {
-  const { API_URL, token } = useApp();
+  const { API_URL, token, user } = useApp();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -121,6 +121,12 @@ export default function BuyGoldModal({ isOpen, onClose, goldPrice, onSuccess }) 
 
         {/* Content */}
         <div className="p-6">
+          {/* Wallet Balance */}
+          <div className="bg-green-50 rounded-xl p-3 mb-4">
+            <p className="text-sm text-green-700">Your Wallet Balance</p>
+            <p className="text-xl font-bold text-green-900">₹{user?.walletBalance?.toLocaleString('en-IN') || '0'}</p>
+          </div>
+
           {/* Current Price */}
           <div className="bg-yellow-50 rounded-xl p-3 mb-4">
             <p className="text-sm text-yellow-700">Current Gold Price</p>

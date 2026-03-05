@@ -96,6 +96,12 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, portfolio, o
 
         {/* Content */}
         <div className="p-6">
+          {/* Wallet Info */}
+          <div className="bg-green-50 rounded-xl p-3 mb-4">
+            <p className="text-sm text-green-700">💰 Amount will be added to your wallet</p>
+            <p className="text-lg font-bold text-green-900">₹{sellAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+          </div>
+
           {/* Current Price */}
           <div className="bg-gray-50 rounded-xl p-3 mb-4">
             <p className="text-sm text-gray-600">Current Gold Price</p>

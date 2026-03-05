@@ -66,9 +66,21 @@ const goalSchema = new mongoose.Schema({
   completed: { type: Boolean, default: false }
 });
 
+// Chat History Schema
+const chatHistorySchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  messages: [{
+    role: { type: String, enum: ['user', 'assistant'] },
+    content: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
+  updatedAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const Goal = mongoose.model('Goal', goalSchema);
+const ChatHistory = mongoose.model('ChatHistory', chatHistorySchema);
 
 // Import Investment routes
 const investmentRoutes = require('./routes/investments');
@@ -284,7 +296,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
         name: user.name,
         trustScore: user.trustScore,
         dailySavings: user.dailySavings,
-        walletBalance: calculatedWalletBalance
+        walletBalance: user.walletBalance
       },
       financialHealthScore: Math.min(healthScore, 100),
       incomeSummary: {
@@ -296,7 +308,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
         total: expenseTotal,
         recent: transactions.filter(t => t.type === 'expense').slice(0, 5)
       },
-      walletBalance: calculatedWalletBalance,
+      walletBalance: user.walletBalance,
       savingsProgress: {
         total: savingsTotal,
         daily: user.dailySavings,
@@ -496,6 +508,22 @@ app.put('/api/goals/:id/progress', authMiddleware, async (req, res) => {
   }
 });
 
+// Delete Goal
+app.delete('/api/goals/:id', authMiddleware, async (req, res) => {
+  try {
+    const goal = await Goal.findById(req.params.id);
+    
+    if (!goal || goal.userId.toString() !== req.userId) {
+      return res.status(404).json({ message: 'Goal not found' });
+    }
+    
+    await Goal.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Goal deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting goal' });
+  }
+});
+
 // 7. Community Routes
 app.get('/api/community/leaderboard', authMiddleware, async (req, res) => {
   try {
@@ -518,7 +546,7 @@ app.get('/api/community/leaderboard', authMiddleware, async (req, res) => {
   }
 });
 
-// 8. AI Assistant Routes - Using Gemini API
+// 8. AI Assistant Routes - Using Gemini API (with Chat History)
 app.post('/api/ai/chat', authMiddleware, async (req, res) => {
   try {
     const { message } = req.body;
@@ -557,6 +585,37 @@ app.post('/api/ai/chat', authMiddleware, async (req, res) => {
     const result = await chat.sendMessage(`${systemPrompt}\n\nUser question: ${message}`);
     const geminiResponse = result.response.text();
     
+    // Save user message to chat history
+    await ChatHistory.findOneAndUpdate(
+      { userId: req.userId },
+      { 
+        $push: { 
+          messages: { 
+            role: 'user', 
+            content: message,
+            timestamp: new Date()
+          } 
+        },
+        $set: { updatedAt: new Date() }
+      },
+      { upsert: true, new: true }
+    );
+    
+    // Save assistant response to chat history
+    await ChatHistory.findOneAndUpdate(
+      { userId: req.userId },
+      { 
+        $push: { 
+          messages: { 
+            role: 'assistant', 
+            content: geminiResponse,
+            timestamp: new Date()
+          } 
+        },
+        $set: { updatedAt: new Date() }
+      }
+    );
+    
     res.json({ 
       response: {
         text: geminiResponse,
@@ -568,10 +627,64 @@ app.post('/api/ai/chat', authMiddleware, async (req, res) => {
     console.error('Gemini API Error:', err);
     const user = await User.findById(req.userId);
     const fallbackResponse = generateAIResponse(req.body.message, user);
+    
+    // Save user message to chat history
+    await ChatHistory.findOneAndUpdate(
+      { userId: req.userId },
+      { 
+        $push: { 
+          messages: { 
+            role: 'user', 
+            content: req.body.message,
+            timestamp: new Date()
+          } 
+        },
+        $set: { updatedAt: new Date() }
+      },
+      { upsert: true }
+    );
+    
+    // Save fallback response to chat history
+    await ChatHistory.findOneAndUpdate(
+      { userId: req.userId },
+      { 
+        $push: { 
+          messages: { 
+            role: 'assistant', 
+            content: fallbackResponse.text,
+            timestamp: new Date()
+          } 
+        },
+        $set: { updatedAt: new Date() }
+      }
+    );
+    
     res.json({ 
       response: fallbackResponse,
       timestamp: new Date()
     });
+  }
+});
+
+// Get chat history
+app.get('/api/ai/history', authMiddleware, async (req, res) => {
+  try {
+    const chatHistory = await ChatHistory.findOne({ userId: req.userId });
+    res.json({ 
+      messages: chatHistory ? chatHistory.messages : [] 
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching chat history' });
+  }
+});
+
+// Clear chat history
+app.delete('/api/ai/history', authMiddleware, async (req, res) => {
+  try {
+    await ChatHistory.deleteOne({ userId: req.userId });
+    res.json({ message: 'Chat history cleared' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error clearing chat history' });
   }
 });
 
@@ -580,38 +693,320 @@ app.get('/api/education/content', (req, res) => {
   res.json([
     {
       id: 1,
-      title: 'Budgeting 101',
-      description: 'Learn how to create a simple budget that works for you',
+      title: 'What is a Budget? 💰',
+      description: 'A budget is simply a plan for your money - knowing where every rupee goes',
       category: 'basics',
-      tips: ['Track your daily expenses', 'Separate needs from wants', 'Save 20% of your income']
+      difficulty: 'Beginner',
+      duration: '5 min',
+      content: `A budget helps you control where your money goes. Think of it like a map for your money journey.
+
+**Why Budget?**
+• Stop wondering where your money went
+• Reach your savings goals faster
+• Reduce stress about money
+
+**Simple Way to Start:**
+1. Write down all money you receive (income)
+2. List all your expenses (bills, food, transport)
+3. Subtract expenses from income
+4. Save what's left!`,
+      tips: ['Start tracking with pen and paper', 'Use simple apps like FinWeave', 'Review weekly, adjust monthly']
     },
     {
       id: 2,
-      title: 'Emergency Fund',
-      description: 'Why you need an emergency fund and how to build one',
-      category: 'savings',
-      tips: ['Start with small amounts', 'Aim for 3-6 months of expenses', 'Keep it separate from daily savings']
+      title: 'Income vs Expense - Know the Difference 📈',
+      description: 'Understanding money in and money out - the foundation of finance',
+      category: 'basics',
+      difficulty: 'Beginner',
+      duration: '3 min',
+      content: `**Income** = Money you earn or receive (salary, freelance work, gifts)
+
+**Expense** = Money you spend (rent, food, shopping, bills)
+
+**The Golden Rule:**
+Income must be MORE than Expenses!
+
+If Expenses > Income = Problem 🚨
+If Income > Expenses = Savings ✅`,
+      tips: ['Always track both', 'Look for ways to increase income', 'Cut unnecessary expenses']
     },
     {
       id: 3,
-      title: 'Smart Savings',
-      description: 'Strategies to maximize your savings without much money',
-      category: 'savings',
-      tips: ['Save before you spend', 'Use the 50-30-20 rule', 'Automate your savings']
+      title: 'The 50-30-20 Rule - Made Simple 📊',
+      description: 'An easy way to split your income without complicated calculations',
+      category: 'basics',
+      difficulty: 'Beginner',
+      duration: '4 min',
+      content: `This simple rule divides your income into three parts:
+
+**50% - NEEDS** (Must pay)
+• Rent / House EMI
+• Electricity & Water bills
+• Groceries
+• Minimum debt payments
+
+**30% - WANTS** (Nice to have)
+• Entertainment
+• Dining out
+• Shopping
+• Subscriptions
+
+**20% - SAVINGS** (Future you)
+• Emergency fund
+• Investments
+• Extra debt payments`,
+      tips: ['Start with this 50-30-20 split', 'Adjust based on your income', 'Even 10% savings is better than 0%']
     },
     {
       id: 4,
-      title: 'Debt Management',
-      description: 'How to manage and pay off debt effectively',
-      category: 'debt',
-      tips: ['Pay more than minimum', 'Focus on high-interest debt first', 'Consider debt consolidation']
+      title: 'What is an Emergency Fund? 🛡️',
+      description: 'Your financial safety net for unexpected situations',
+      category: 'savings',
+      difficulty: 'Beginner',
+      duration: '5 min',
+      content: `An emergency fund is money saved for unexpected events like:
+• Medical emergencies
+• Job loss
+• Car/phone repair
+• Family emergencies
+
+**How Much to Save?**
+Start with ₹10,000 - that's your first goal!
+Eventually aim for 3-6 months of expenses
+
+**Where to Keep It?**
+• Savings account (easy access)
+• Don't invest in stocks for emergency money
+• Keep it separate from regular savings`,
+      tips: ['Start with ₹50 daily', 'Automate transfers', 'Only use for real emergencies']
     },
     {
       id: 5,
-      title: 'Financial Goals',
-      description: 'Set and achieve your financial goals',
+      title: 'Smart Ways to Save Money 💡',
+      description: 'Practical tips to save more without feeling deprived',
+      category: 'savings',
+      difficulty: 'Beginner',
+      duration: '6 min',
+      content: `**Daily Saving Tips:**
+• Cook at home instead of ordering
+• Carry homemade lunch
+• Use public transport or walk
+• Wait 24 hours before buying (avoids impulse)
+• Cancel unused subscriptions
+
+**Weekly Habits:**
+• Compare prices before shopping
+• Buy in bulk for essentials
+• Use cashback apps
+
+**Monthly Actions:**
+• Review all subscriptions
+• Check bank statements
+• Transfer savings first day of month`,
+      tips: ['Save before spending, not after', 'Small amounts add up big', 'Make saving automatic']
+    },
+    {
+      id: 6,
+      title: 'Understanding Debt - Good vs Bad 💳',
+      description: 'Not all debt is equal - learn which to avoid and which might help',
+      category: 'debt',
+      difficulty: 'Beginner',
+      duration: '5 min',
+      content: `**BAD Debt (Avoid):**
+• Credit card debt (high interest!)
+• Personal loans for shopping
+• Payday loans
+• EMI for wants (phone, clothes)
+
+**OK Debt (Sometimes OK):**
+• Home loan (builds asset)
+• Education loan (investment in you)
+• Business loan (to grow business)
+
+**The Problem with Credit Cards:**
+If you don't pay full amount, ₹1000 can become ₹1500 in a year!`,
+      tips: ['Pay credit card full every month', 'Avoid loans for wants', 'If you owe, pay more than minimum']
+    },
+    {
+      id: 7,
+      title: 'How to Pay Off Debt Fast 🚀',
+      description: 'Simple strategies to become debt-free quicker',
+      category: 'debt',
+      difficulty: 'Intermediate',
+      duration: '6 min',
+      content: `**Method 1: Snowball (Easy)**
+1. List all debts smallest to largest
+2. Pay minimum on all except smallest
+3. Put extra money on smallest debt
+4. Celebrate when paid off!
+5. Move to next smallest
+
+**Method 2: Avalanche (Saves Money)**
+1. List debts highest interest to lowest
+2. Pay minimum on all except highest interest
+3. Put extra money on highest interest
+4. Save the most money on interest!
+
+**Bonus Tips:**
+• Pay more than minimum when possible
+• Don't take new debt while paying off
+• Celebrate small wins!`,
+      tips: ['Choose method you can stick with', 'Find extra money to pay faster', 'Stay motivated - you can do it!']
+    },
+    {
+      id: 8,
+      title: 'Setting Financial Goals - The Right Way 🎯',
+      description: 'Learn to set goals you can actually achieve',
       category: 'planning',
-      tips: ['Make goals specific and measurable', 'Break big goals into small steps', 'Review progress regularly']
+      difficulty: 'Beginner',
+      duration: '5 min',
+      content: `**SMART Goals Framework:**
+
+S - Specific: What exactly do you want?
+M - Measurable: How will you know when achieved?
+A - Achievable: Is it realistic?
+R - Relevant: Does it matter to you?
+T - Time-bound: When do you want it?
+
+**Example - Bad vs Good:**
+❌ "I want to save money"
+✅ "I want to save ₹50,000 for emergency fund in 12 months by saving ₹4,200 per month"
+
+**Goal Categories:**
+• Short-term: < 1 year (phone, vacation)
+• Medium-term: 1-5 years (car, wedding)
+• Long-term: 5+ years (house, retirement)`,
+      tips: ['Write goals down', 'Review monthly', 'Adjust if needed']
+    },
+    {
+      id: 9,
+      title: 'Understanding Investments - Start Here 📈',
+      description: 'Basic concepts explained in simple language',
+      category: 'planning',
+      difficulty: 'Beginner',
+      duration: '7 min',
+      content: `**What is Investment?**
+Putting money somewhere to grow over time, instead of keeping it idle.
+
+**Common Types:**
+
+1. **Savings Account**
+   • Very safe, very low returns (3-4%)
+   • Good for emergency fund
+
+2. **Fixed Deposits (FD)**
+   • Safe, slightly better returns (5-7%)
+   • Lock your money for fixed time
+
+3. **Gold**
+   • Traditional investment
+   • Can be bought in small amounts
+
+4. **Mutual Funds**
+   • Professional management
+   • Invest in stocks/bonds
+   • Higher returns = higher risk
+
+**Golden Rules:**
+• Start early (time is your friend)
+• Don't invest money you need soon
+• Don't put all eggs in one basket`,
+      tips: ['Start with emergency fund first', 'Learn before investing', 'Start small']
+    },
+    {
+      id: 10,
+      title: 'Banking Basics - Know Your Accounts 🏦',
+      description: 'Understanding different bank accounts and their features',
+      category: 'basics',
+      difficulty: 'Beginner',
+      duration: '4 min',
+      content: `**Types of Bank Accounts:**
+
+1. **Savings Account**
+   • For daily transactions
+   • Earns some interest (3-4%)
+   • Unlimited withdrawals (usually)
+
+2. **Current Account**
+   • For businesses
+   • No interest earned
+   • More features for transactions
+
+3. **Fixed Deposit (FD)**
+   • Lock money for fixed period
+   • Higher interest rates
+   • Penalty for early withdrawal
+
+**Tips:**
+• Compare banks for best interest
+• Use UPI for easy transfers
+• Keep account active to avoid charges`,
+      tips: ['Check minimum balance requirements', 'Use mobile banking', 'Enable SMS alerts']
+    },
+    {
+      id: 11,
+      title: 'Tracking Expenses - The Habit That Changes Everything 📝',
+      description: 'Why writing down expenses is the first step to financial success',
+      category: 'basics',
+      difficulty: 'Beginner',
+      duration: '5 min',
+      content: `**Why Track?**
+When you track expenses, you:
+• See where money actually goes
+• Find surprising savings opportunities
+• Make better decisions
+• Reduce waste
+
+**Simple Methods:**
+
+1. **Notebook Method**
+   Carry small notebook
+   Write every expense immediately
+   
+2. **App Method**
+   Use FinWeave or similar apps
+   Auto-categorize spending
+
+3. **Envelope Method**
+   Put cash in envelopes for categories
+   When envelope empty, stop spending
+
+**What to Track:**
+• Food & Groceries
+• Transport
+• Entertainment
+• Shopping
+• Bills`,
+      tips: ['Track immediately - memory fails!', 'Review weekly', 'Look for patterns']
+    },
+    {
+      id: 12,
+      title: 'Compound Interest - Your Best Friend or Worst Enemy ⚖️',
+      description: 'Understanding how interest works for or against you',
+      category: 'planning',
+      difficulty: 'Intermediate',
+      duration: '6 min',
+      content: `**What is Compound Interest?**
+Interest on interest - your money grows on previous growth!
+
+**Good Example - Investing:**
+• You invest ₹10,000
+• 10% yearly return
+• After 10 years: ₹25,937
+• Your money MORE THAN DOUBLED!
+
+**Bad Example - Debt:**
+• You owe ₹10,000 on credit card
+• 36% yearly interest (typical!)
+• After 1 year: ₹13,600
+• Just for not paying!
+
+**The Lesson:**
+• Let compound interest work FOR you (invest)
+• Fight compound interest working AGAINST you (debt)
+
+Time is powerful - start early!`,
+      tips: ['Start investing as early as possible', 'Avoid high-interest debt', 'Be patient - wealth takes time']
     }
   ]);
 });
@@ -867,3 +1262,4 @@ mongoose.connect(MONGO_URI)
       console.log(`✅ Server running on http://localhost:${PORT} (without MongoDB)`);
     });
   });
+

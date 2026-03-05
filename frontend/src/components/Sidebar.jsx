@@ -9,7 +9,6 @@ const menuItems = [
   { path: '/micro-savings', label: 'Micro Savings', icon: '💰' },
   { path: '/goals', label: 'Goals', icon: '🎯' },
   { path: '/investment', label: 'Gold Investment', icon: '📊' },
-  { path: '/community', label: 'Community', icon: '👥' },
   { path: '/ai-assistant', label: 'AI Assistant', icon: '🤖' },
   { path: '/education', label: 'Education', icon: '📚' },
 ];

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
 
 export default function Education() {
   const { API_URL, token } = useApp();
+  const navigate = useNavigate();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -34,6 +36,19 @@ export default function Education() {
   const filteredContent = selectedCategory === 'all' 
     ? content 
     : content.filter(c => c.category === selectedCategory);
+
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 'Beginner': return 'bg-green-100 text-green-700';
+      case 'Intermediate': return 'bg-yellow-100 text-yellow-700';
+      case 'Advanced': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const handleStartLesson = (lessonId) => {
+    navigate(`/course?id=${lessonId}`);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -79,14 +94,22 @@ export default function Education() {
                 lesson.category === 'debt' ? 'bg-red-50' :
                 'bg-purple-50'
               }`}>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                  lesson.category === 'basics' ? 'bg-blue-500 text-white' :
-                  lesson.category === 'savings' ? 'bg-green-500 text-white' :
-                  lesson.category === 'debt' ? 'bg-red-500 text-white' :
-                  'bg-purple-500 text-white'
-                }`}>
-                  {lesson.category}
-                </span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                    lesson.category === 'basics' ? 'bg-blue-500 text-white' :
+                    lesson.category === 'savings' ? 'bg-green-500 text-white' :
+                    lesson.category === 'debt' ? 'bg-red-500 text-white' :
+                    'bg-purple-500 text-white'
+                  }`}>
+                    {lesson.category}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(lesson.difficulty)}`}>
+                    {lesson.difficulty}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>⏱️ {lesson.duration}</span>
+                </div>
               </div>
 
               {/* Card Body */}
@@ -94,22 +117,11 @@ export default function Education() {
                 <h3 className="text-xl font-bold text-gray-800 mb-2">{lesson.title}</h3>
                 <p className="text-gray-600 mb-4">{lesson.description}</p>
 
-                {/* Tips */}
-                <div className="space-y-2">
-                  <p className="font-medium text-sm text-gray-700">💡 Key Tips:</p>
-                  {lesson.tips.map((tip, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-start gap-2 text-sm text-gray-600"
-                    >
-                      <span className="text-primary-500">✓</span>
-                      <span>{tip}</span>
-                    </div>
-                  ))}
-                </div>
-
                 {/* Action Button */}
-                <button className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                <button 
+                  onClick={() => handleStartLesson(lesson.id)}
+                  className="w-full mt-4 py-3 bg-yellow-500 text-white rounded-xl font-medium hover:bg-yellow-600 transition-colors"
+                >
                   Start Lesson →
                 </button>
               </div>

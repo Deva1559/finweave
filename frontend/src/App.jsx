@@ -12,9 +12,9 @@ import Dashboard from './pages/Dashboard';
 import Summary from './pages/Summary';
 import FinancialTwin from './pages/FinancialTwin';
 import MicroSavings from './pages/MicroSavings';
-import Community from './pages/Community';
 import AIAssistant from './pages/AIAssistant';
 import Education from './pages/Education';
+import CourseContent from './pages/CourseContent';
 import Goals from './pages/Goals';
 import Investment from './pages/Investment';
 
@@ -140,9 +140,9 @@ function App() {
           <Route path="/summary" element={user ? <SummaryWithLayout /> : <Navigate to="/login" />} />
           <Route path="/financial-twin" element={user ? <FinancialTwinWithLayout /> : <Navigate to="/login" />} />
           <Route path="/micro-savings" element={user ? <MicroSavingsWithLayout /> : <Navigate to="/login" />} />
-          <Route path="/community" element={user ? <CommunityWithLayout /> : <Navigate to="/login" />} />
           <Route path="/ai-assistant" element={user ? <AIAssistantWithLayout /> : <Navigate to="/login" />} />
           <Route path="/education" element={user ? <EducationWithLayout /> : <Navigate to="/login" />} />
+          <Route path="/course" element={user ? <CourseContentWithLayout /> : <Navigate to="/login" />} />
           <Route path="/goals" element={user ? <GoalsWithLayout /> : <Navigate to="/login" />} />
           <Route path="/investment" element={user ? <InvestmentWithLayout /> : <Navigate to="/login" />} />
           
@@ -211,20 +211,6 @@ function MicroSavingsWithLayout() {
   );
 }
 
-function CommunityWithLayout() {
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 ml-0 lg:ml-64">
-        <Header />
-        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
-          <Community />
-        </main>
-      </div>
-    </div>
-  );
-}
-
 function AIAssistantWithLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -275,6 +261,20 @@ function InvestmentWithLayout() {
         <Header />
         <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
           <Investment />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function CourseContentWithLayout() {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 ml-0 lg:ml-64">
+        <Header />
+        <main className="pt-16 sm:pt-20 px-3 sm:px-4 lg:px-6 pb-6">
+          <CourseContent />
         </main>
       </div>
     </div>

@@ -75,6 +75,26 @@ export default function Goals() {
     }
   };
 
+  const handleDeleteGoal = async (goalId) => {
+    if (!window.confirm('Are you sure you want to delete this goal?')) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/goals/${goalId}`, {
+        method: 'DELETE',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        fetchGoals();
+      }
+    } catch (err) {
+      console.error('Error deleting goal:', err);
+    }
+  };
+
   // Calculate totals
   const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
   const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
@@ -173,6 +193,12 @@ export default function Goals() {
                   </div>
 
                   <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => handleDeleteGoal(goal._id)}
+                      className="text-red-500 hover:text-red-700 text-sm font-medium"
+                    >
+                      🗑️ Delete
+                    </button>
                     <p className="text-sm font-medium text-gray-600">
                       {Math.round(progress)}% Complete
                     </p>
@@ -283,6 +309,7 @@ export default function Goals() {
                   value={newGoal.deadline}
                   onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
                   className="input-field"
+                  min={new Date().toISOString().split('T')[0]}
                   required
                 />
               </div>

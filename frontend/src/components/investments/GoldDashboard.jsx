@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../../App';
 
 export default function GoldDashboard({ goldPrice, portfolio, onBuyClick, onSellClick }) {
-  const { API_URL } = useApp();
+  const { user } = useApp();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +21,22 @@ export default function GoldDashboard({ goldPrice, portfolio, onBuyClick, onSell
 
   return (
     <div className="space-y-6">
+      {/* Wallet Balance Card */}
+      <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl shadow-lg p-6 border border-green-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-green-700 font-medium">💳 Your Wallet Balance</p>
+            <h2 className="text-3xl font-bold text-green-900 mt-1">
+              ₹{user?.walletBalance?.toLocaleString('en-IN') || '0'}
+            </h2>
+            <p className="text-xs text-green-600 mt-1">
+              Used for buying & selling gold
+            </p>
+          </div>
+          <div className="text-5xl">💰</div>
+        </div>
+      </div>
+
       {/* Gold Price Card */}
       <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg p-6 border border-yellow-200">
         <div className="flex items-center justify-between">

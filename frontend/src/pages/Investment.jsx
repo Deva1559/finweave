@@ -8,7 +8,7 @@ import BuyGoldModal from '../components/investments/BuyGoldModal';
 import SellGoldModal from '../components/investments/SellGoldModal';
 
 export default function Investment() {
-  const { API_URL, token } = useApp();
+  const { API_URL, token, user, updateUser } = useApp();
   const [loading, setLoading] = useState(true);
   const [goldPrice, setGoldPrice] = useState(null);
   const [portfolio, setPortfolio] = useState(null);
@@ -63,20 +63,51 @@ export default function Investment() {
       const historyData = await historyResponse.json();
       setTransactions(historyData.investments || []);
 
+      // Fetch dashboard data to get wallet balance (same as Dashboard page)
+      const dashboardResponse = await fetch(`${API_URL}/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (dashboardResponse.ok) {
+        const dashboardData = await dashboardResponse.json();
+        // Update user context with wallet balance from dashboard (same calculation as Dashboard)
+        updateUser({ 
+          walletBalance: dashboardData.walletBalance,
+          name: dashboardData.user?.name,
+          trustScore: dashboardData.user?.trustScore
+        });
+      }
+
     } catch (err) {
       console.error('Error fetching investment data:', err);
-setError('Failed to load investment data. Make sure backend is running on port 3002.');
+      setError('Failed to load investment data. Make sure backend is running on port 3002.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBuySuccess = () => {
-    fetchData(); // Refresh data after successful purchase
+  const handleBuySuccess = async () => {
+    await fetchData(); // Refresh data after successful purchase
+    // Force a re-render of user context to update Dashboard's wallet display
+    const response = await fetch(`${API_URL}/dashboard`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      updateUser({ walletBalance: data.walletBalance });
+    }
   };
 
-  const handleSellSuccess = () => {
-    fetchData(); // Refresh data after successful sale
+  const handleSellSuccess = async () => {
+    await fetchData(); // Refresh data after successful sale
+    // Force a re-render of user context to update Dashboard's wallet display
+    const response = await fetch(`${API_URL}/dashboard`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      updateUser({ walletBalance: data.walletBalance });
+    }
   };
 
   if (loading) {
