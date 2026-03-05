@@ -213,23 +213,38 @@ export default function Goals() {
                       {Math.round(progress)}% Complete
                     </p>
                     
-                    {!goal.completed && (
+                    {!isCompleted && remaining > 0 && (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleAddProgress(goal._id, 100)}
-                          className="px-4 py-2 bg-primary-50 text-primary-600 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
+                          disabled={remaining < 100}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            remaining < 100 
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                              : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                          }`}
                         >
                           +₹100
                         </button>
                         <button
                           onClick={() => handleAddProgress(goal._id, 500)}
-                          className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
+                          disabled={remaining < 500}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            remaining < 500 
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                              : 'bg-primary-500 text-white hover:bg-primary-600'
+                          }`}
                         >
                           +₹500
                         </button>
                         <button
                           onClick={() => handleAddProgress(goal._id, 1000)}
-                          className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium hover:bg-pink-600 transition-colors"
+                          disabled={remaining < 1000}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            remaining < 1000 
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                              : 'bg-pink-500 text-white hover:bg-pink-600'
+                          }`}
                         >
                           +₹1000
                         </button>
