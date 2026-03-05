@@ -217,8 +217,8 @@ export default function Login() {
       {/* Decorative grid pattern - hidden on mobile */}
       <div className="absolute inset-0 opacity-[0.03] hidden sm:block" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
       
-      {/* Scrollable container for mobile */}
-      <div className="w-full max-w-md relative z-10 overflow-y-auto max-h-screen py-4">
+      {/* Fixed container - no scrolling */}
+      <div className="w-full max-w-md relative z-10">
         {/* Logo & Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="flex justify-center mb-3 sm:mb-4">

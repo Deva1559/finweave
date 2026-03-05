@@ -172,8 +172,8 @@ export default function Signup() {
       <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-trust-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 hidden sm:block"></div>
       <div className="absolute -bottom-8 left-10 sm:left-20 w-48 h-48 sm:w-64 sm:h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 hidden sm:block"></div>
       
-      {/* Scrollable container */}
-      <div className="w-full max-w-lg relative z-10 overflow-y-auto max-h-screen py-4">
+      {/* Fixed container - no scrolling */}
+      <div className="w-full max-w-lg relative z-10">
         {/* Logo & Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="flex justify-center mb-3 sm:mb-4">
