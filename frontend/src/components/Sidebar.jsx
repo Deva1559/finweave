@@ -100,10 +100,14 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="p-3 sm:p-4 border-t border-gray-100">
-          <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-3 sm:p-4 text-white">
+          <Link
+            to="/ai-assistant"
+            onClick={() => setIsOpen(false)}
+            className="block bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-3 sm:p-4 text-white hover:opacity-90 transition-opacity"
+          >
             <p className="font-semibold text-sm">Need Help?</p>
             <p className="text-xs opacity-80 mt-1 hidden sm:block">Chat with our AI assistant</p>
-          </div>
+          </Link>
         </div>
       </div>
     </>
