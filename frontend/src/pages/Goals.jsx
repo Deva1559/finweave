@@ -57,6 +57,14 @@ export default function Goals() {
   };
 
   const handleAddProgress = async (goalId, amount) => {
+    const goal = goals.find(g => g._id === goalId);
+    if (!goal) return;
+    
+    const remaining = goal.targetAmount - goal.currentAmount;
+    if (remaining <= 0) return;
+    
+    const amountToAdd = Math.min(amount, remaining);
+    
     try {
       const res = await fetch(`${API_URL}/goals/${goalId}/progress`, {
         method: 'PUT',
@@ -64,7 +72,7 @@ export default function Goals() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount: amountToAdd })
       });
 
       if (res.ok) {
@@ -150,9 +158,11 @@ export default function Goals() {
           <div className="space-y-6">
             {goals.map(goal => {
               const progress = (goal.currentAmount / goal.targetAmount) * 100;
+              const remaining = goal.targetAmount - goal.currentAmount;
               const daysLeft = goal.deadline 
                 ? Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24))
                 : null;
+              const isCompleted = goal.completed || remaining <= 0;
               
               return (
                 <div key={goal._id} className="border border-gray-100 rounded-xl p-5">
